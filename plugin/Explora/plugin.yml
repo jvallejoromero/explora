@@ -1,0 +1,5 @@
+name: Explora
+main: com.jvallejoromero.explora.ExploraPlugin
+version: 0.1.0-bootstrap
+author: Jonathan Vallejo
+api-version: 1.21.5
