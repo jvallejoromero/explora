@@ -1,4 +1,5 @@
 # Explora 🌎
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 Explora is a real-time Minecraft world viewer that visualizes all explored chunks using a Spigot plugin, a Node.js backend, and a React frontend. Designed for performance and real-time updates 
 
