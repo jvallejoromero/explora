@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.jvallejoromero'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+        resources {
+            srcDirs = ['src/resources']
+        }
+    }
+}
+
+dependencies {
+    implementation files('lib/gson-2.10.1.jar')
+    implementation files('lib/mcaselector-2.5.2.jar')
+    compileOnly files('lib/spigot-api-1.21.5-R0.1-SNAPSHOT-shaded.jar') 
+}
+
+shadowJar {
+    archiveBaseName.set('Explora')
+    archiveClassifier.set('')
+    archiveVersion.set('0.1.0-bootstrap')
+}
+
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from('src/resources') {
+        include 'plugin.yml'
+	include 'config.yml'
+	include 'LICENCE-mcaselector.txt'
+    }
+}
+

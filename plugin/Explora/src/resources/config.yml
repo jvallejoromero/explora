@@ -1,0 +1,9 @@
+# If set to true, all world folders will be scanned for region files on server startup.
+# This may be resource-intensive and is typically only needed once.
+scan-region-files: true
+
+# Specifies the relative path where explored chunk data will be saved as JSON files.
+chunk-data-folder: chunk-data
+
+# Interval (in server ticks) between updates to the explored chunk data (20 ticks = 1 second)
+chunk-update-ticks: 6000
