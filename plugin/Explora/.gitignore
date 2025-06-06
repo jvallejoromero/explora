@@ -19,3 +19,7 @@ Thumbs.db
 # Minecraft-specific
 test versions/
 *.log
+
+# Allow tracking of jars in lib folder
+!lib/
+!lib/*.jar
