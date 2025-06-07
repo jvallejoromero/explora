@@ -28,13 +28,13 @@ public class ChunkTracker implements Listener {
 		if (fromChunkX == toChunkX && fromChunkZ == toChunkZ) return;
 		
 		ChunkManager chunkManager = ExploraPlugin.getInstance().getChunkManager();
-		Chunk chunk = player.getLocation().getChunk();
+		Chunk chunk = event.getTo().getChunk();
 		
 		int chunkX = chunk.getX();
 		int chunkZ = chunk.getZ();
 		
 		boolean explored = chunkManager.isChunkExplored(player.getWorld().getName(), chunkX, chunkZ);
-		sendActionBarMessage(player, "Chunk Explored: " + explored);
+		sendActionBarMessage(player, "Chunk (X:" + chunkX + " Z:" + chunkZ + ") Explored: " + explored);
 		
 		if (!explored) {
 		    chunkManager.markChunkAsExplored(player.getWorld().getName(), chunkX, chunkZ);

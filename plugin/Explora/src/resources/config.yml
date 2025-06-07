@@ -1,9 +1,54 @@
+# ============================
+# Explora Plugin Configuration
+# ============================
+
 # If set to true, all world folders will be scanned for region files on server startup.
-# This may be resource-intensive and is typically only needed once.
+# This is useful for the initial setup to detect already-explored chunks.
+# WARNING: This may be resource-intensive and should typically only be enabled once.
 scan-region-files: true
 
-# Specifies the relative path where explored chunk data will be saved as JSON files.
+# Specifies the relative folder path (inside the plugin's data folder) 
+# where explored chunk data will be saved in JSON format.
 chunk-data-folder: chunk-data
 
-# Interval (in server ticks) between updates to the explored chunk data (20 ticks = 1 second)
+# The interval (in server ticks) between updates to explored chunk data.
+# 20 ticks = 1 second, so 6000 = 5 minutes.
 chunk-update-ticks: 6000
+
+# How often (in ticks) to check for player position changes and send updates.
+# 20 ticks = 1 second. Set this to control how frequently player positions
+# are synced with the backend or map viewer.
+# Lower values increase responsiveness but may use more CPU and bandwidth.
+player-update-ticks: 20
+
+# ============
+# Backend Setup
+# ============
+
+# The port your backend server is running on.
+backend-port: 3000
+
+# Endpoint used for posting single chunk updates.
+# %port% is automatically replaced with the actual port at runtime.
+backend-chunk-post-url: "http://localhost:%port%/chunks/update"
+
+# Endpoint for posting multiple chunks in a batch (more efficient).
+backend-chunk-batch-post-url: "http://localhost:%port%/chunks/update/batch"
+
+# Endpoint for posting player position updates (for frontend display).
+backend-player-post-url: "http://localhost:%port%/players/update"
+
+# Endpoint to clear all chunk data from the backend database.
+# WARNING: This will delete all stored chunk data.
+# The `secret` query param is used for basic protection.
+backend-delete-chunks-url: "http://localhost:%port%/admin/clear-chunks?secret=thisisaneasysecret"
+
+# Delay (in ticks) between sending each batch of chunk data to avoid overloading the backend.
+# Lower values = faster transmission but higher load.
+backend-chunk-batch-post-delay-ticks: 5
+
+# Number of chunks to include in each batch sent to the backend.
+backend-chunk-batch-size: 1000
+
+# Enables verbose logging for debugging HTTP requests and chunk processing.
+debug-mode: true
