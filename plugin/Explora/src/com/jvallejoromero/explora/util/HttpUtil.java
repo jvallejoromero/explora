@@ -26,10 +26,11 @@ public class HttpUtil {
 	        try {
 	            URL url = new URL(targetUrl);
 	            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
+	            
 	            conn.setRequestMethod("DELETE");
 	            conn.setRequestProperty("Content-Type", "application/json");
-
+	            conn.setRequestProperty("x-api-key", Constants.BACKEND_API_KEY);
+	            
 	            int responseCode = conn.getResponseCode();
 
 	            if (Constants.DEBUG_MODE) {
@@ -56,10 +57,10 @@ public class HttpUtil {
 			try {
 				
 				if (Constants.DEBUG_MODE) {
-					if (!targetUrl.contains(buildUrl(Constants.BACKEND_CHUNK_BATCH_POST_URL))) {
-//						ExploraPlugin.log("&a&o[HTTP] Sending to " + targetUrl + ": " + json);
-					} else {
+					if (targetUrl.contains(buildUrl(Constants.BACKEND_CHUNK_BATCH_POST_URL))) {
 						ExploraPlugin.log("&a&o[HTTP] Sending chunks to " + targetUrl);
+					} else if (!targetUrl.contains(buildUrl(Constants.BACKEND_PLAYER_POST_URL))){
+						ExploraPlugin.log("&a&o[HTTP] Sending to " + targetUrl + ": " + json);
 					}
 				}
 				
@@ -68,6 +69,7 @@ public class HttpUtil {
 				
 				conn.setRequestMethod("POST");
 				conn.setRequestProperty("Content-Type", "application/json");
+				conn.setRequestProperty("x-api-key", Constants.BACKEND_API_KEY);
 				conn.setDoOutput(true);
 				
 				try (OutputStream os = conn.getOutputStream()) {

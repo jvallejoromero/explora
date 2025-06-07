@@ -57,7 +57,7 @@ public class ChunkUtils {
 					File regionDir = entry.getValue();
 					
 					ExploraPlugin.log("&6Scanning world: " + folder.getName() + " [" + dimension + "]");
-					Set<String> exploredChunks = getExploredChunksFromRegionFolder(regionDir);
+					Set<ChunkCoord> exploredChunks = getExploredChunksFromRegionFolder(regionDir);
 					
 					saveAsJson(folder.getName(), dimension, exploredChunks);
 				}
@@ -131,14 +131,14 @@ public class ChunkUtils {
 	}
 	
 	/**
-	 * Returns a set of strings representing the explored chunks in "x,z" format
+	 * Returns a set of strings representing the explored chunks in ChunkCoord format
 	 * from the provided region directory.
 	 *
 	 * @param regionDir The region folder containing .mca files to scan.
-	 * @return A set of explored chunk coordinates as "x,z" strings.
+	 * @return A set of explored chunk coordinates as ChunkCoord objects
 	 */
-	public static Set<String> getExploredChunksFromRegionFolder(File regionDir) {
-	    Set<String> exploredChunks = new HashSet<>();
+	public static Set<ChunkCoord> getExploredChunksFromRegionFolder(File regionDir) {
+	    Set<ChunkCoord> exploredChunks = new HashSet<>();
 
 	    File[] regionFiles = regionDir.listFiles((dir, name) -> name.endsWith(".mca"));
 	    if (regionFiles == null) return exploredChunks;
@@ -153,7 +153,9 @@ public class ChunkUtils {
 	            	
 	                if (chunk != null && !chunk.isEmpty()) {
 	                    Point2i coord = chunk.getAbsoluteLocation();
-	                    exploredChunks.add(coord.getX() + "," + coord.getZ());
+	                    ChunkCoord chunkCoord = new ChunkCoord(coord.getX(), coord.getZ());
+	                    
+	                    exploredChunks.add(chunkCoord);
 	                }
 	            }
 
@@ -172,17 +174,16 @@ public class ChunkUtils {
 	 * @param worldName The name of the world or dimension (e.g., "world", "world_nether").
 	 * @param chunks    A set of strings representing explored chunks in "x,z" format.
 	 */
-	public static void saveAsJson(String worldName, String dimension, Set<String> chunks) {
+	public static void saveAsJson(String worldName, String dimension, Set<ChunkCoord> chunks) {
 		try {
 			Files.createDirectories(Constants.SAVE_PATH);
 			File output = new File(Constants.SAVE_PATH.toFile(), "explored_chunks_" + worldName + ".json");
 
 			List<Map<String, Integer>> chunkList = new ArrayList<>();
 
-			for (String chunk : chunks) {
-				String[] parts = chunk.split(",");
-				int x = Integer.parseInt(parts[0]);
-				int z = Integer.parseInt(parts[1]);
+			for (ChunkCoord chunk : chunks) {
+				int x = chunk.getX();
+				int z = chunk.getZ();
 				
 				Map<String, Integer> chunkObj = new HashMap<>();
 				chunkObj.put("x", x);

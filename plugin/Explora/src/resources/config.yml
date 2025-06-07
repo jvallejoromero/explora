@@ -28,20 +28,24 @@ player-update-ticks: 20
 # The port your backend server is running on.
 backend-port: 3000
 
+# The secret API key used to authenticate requests to the backend server.
+# It must match the backend's expected API key, or requests will be rejected.
+backend-api-key: "your_super_secret_key"
+
 # Endpoint used for posting single chunk updates.
 # %port% is automatically replaced with the actual port at runtime.
-backend-chunk-post-url: "http://localhost:%port%/chunks/update"
+backend-chunk-post-url: "http://localhost:%port%/api/chunks/update"
 
 # Endpoint for posting multiple chunks in a batch (more efficient).
-backend-chunk-batch-post-url: "http://localhost:%port%/chunks/update/batch"
+backend-chunk-batch-post-url: "http://localhost:%port%/api/chunks/update/batch"
 
 # Endpoint for posting player position updates (for frontend display).
-backend-player-post-url: "http://localhost:%port%/players/update"
+backend-player-post-url: "http://localhost:%port%/api/players/update"
 
 # Endpoint to clear all chunk data from the backend database.
 # WARNING: This will delete all stored chunk data.
 # The `secret` query param is used for basic protection.
-backend-delete-chunks-url: "http://localhost:%port%/admin/clear-chunks?secret=thisisaneasysecret"
+backend-delete-chunks-url: "http://localhost:%port%/api/admin/clear-chunks"
 
 # Delay (in ticks) between sending each batch of chunk data to avoid overloading the backend.
 # Lower values = faster transmission but higher load.

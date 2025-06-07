@@ -3,6 +3,7 @@ package com.jvallejoromero.explora.manager;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -10,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -28,8 +28,9 @@ import com.jvallejoromero.explora.util.HttpUtil;
 public class ChunkManager {
 
 	private final ExploraPlugin plugin;
-	private final Map<String, Set<String>> worldToChunks = new HashMap<>();
-	private final Map<String, Set<String>> newlyExploredChunks = new HashMap<>();
+	private final Map<String, Set<ChunkCoord>> worldToChunks = new HashMap<>();
+	private final Map<String, Set<ChunkCoord>> newlyExploredChunks = new HashMap<>();
+	
 	private final AtomicInteger pendingBatchCount = new AtomicInteger(0);
 	
 	private boolean sentChunksToDatabase = false;
@@ -83,12 +84,14 @@ public class ChunkManager {
 				
 				JsonArray chunkList = obj.getAsJsonArray("exploredChunks");
 				
-				Set<String> chunkSet = new HashSet<>();
+				HashSet<ChunkCoord> chunkSet = new HashSet<>();
 				for (JsonElement el : chunkList) {
 					JsonObject chunk = el.getAsJsonObject();
 					int x = chunk.get("x").getAsInt();
 					int z = chunk.get("z").getAsInt();
-					chunkSet.add(x + "," + z);
+					
+					ChunkCoord chunkCoord = new ChunkCoord(x,z);
+					chunkSet.add(chunkCoord);
 				}
 
 				worldToChunks.put(worldName, chunkSet);
@@ -108,15 +111,19 @@ public class ChunkManager {
 	public void saveNewlyExploredChunksToDisk() {
 		int newChunkSets = 0;
 		
-        for (Map.Entry<String, Set<String>> entry : newlyExploredChunks.entrySet()) {
+        for (Map.Entry<String, Set<ChunkCoord>> entry : newlyExploredChunks.entrySet()) {
             String worldName = entry.getKey();
-            Set<String> newChunks = entry.getValue();
+            Set<ChunkCoord> newChunks = entry.getValue();
 
             if (newChunks.isEmpty()) continue;
             newChunkSets++;
 
             File file = Constants.SAVE_PATH.resolve("explored_chunks_" + worldName + ".json").toFile();
-
+            if (!file.exists()) {
+                ExploraPlugin.warn("Chunk JSON file missing for world: " + worldName);
+                continue;
+            }
+            
             try (FileReader reader = new FileReader(file)) {
                 JsonObject obj = JsonParser.parseReader(reader).getAsJsonObject();
                 
@@ -126,23 +133,23 @@ public class ChunkManager {
                 JsonArray chunkArray = obj.getAsJsonArray("exploredChunks");
                 
                 // DEDUPLICATION STEP
-                Set<String> existingKeys = new HashSet<>();
+                Set<ChunkCoord> existingKeys = new HashSet<>();
                 for (JsonElement el : chunkArray) {
                     JsonObject chunk = el.getAsJsonObject();
                     int x = chunk.get("x").getAsInt();
                     int z = chunk.get("z").getAsInt();
-                    existingKeys.add(x + "," + z);
+                    
+                    ChunkCoord chunkCoord = new ChunkCoord(x,z);
+                    existingKeys.add(chunkCoord);
                 }
                 
                 int uniqueChunks = 0;
                 
                 // ADD ONLY UNIQUE CHUNKS
-                for (String chunkKey : newChunks) {
+                for (ChunkCoord chunkKey : newChunks) {
                     if (existingKeys.contains(chunkKey)) continue;
-
-                    String[] parts = chunkKey.split(",");
-                    int x = Integer.parseInt(parts[0]);
-                    int z = Integer.parseInt(parts[1]);
+                    int x = chunkKey.getX();
+                    int z = chunkKey.getZ();
 
                     JsonObject chunkObj = new JsonObject();
                     chunkObj.addProperty("x", x);
@@ -178,12 +185,12 @@ public class ChunkManager {
 
 
 	public boolean isChunkExplored(String world, int x, int z) {
-		Set<String> chunks = worldToChunks.get(world);
-		return chunks != null && chunks.contains(x + "," + z);
+		Set<ChunkCoord> chunks = worldToChunks.get(world);
+		return chunks != null && chunks.contains(new ChunkCoord(x,z));
 	}
 
 	public void markChunkAsExplored(String world, int x, int z) {
-	    String key = x + "," + z;
+	    ChunkCoord key = new ChunkCoord(x,z);
 
 	    if (!isChunkExplored(world, x, z)) {
 	        worldToChunks.computeIfAbsent(world, k -> new HashSet<>()).add(key);
@@ -196,11 +203,11 @@ public class ChunkManager {
 	    
 	    // compute total batch count 
 	    int totalBatches = 0;
-	    Map<World, Set<String>> validChunkSets = new HashMap<>();
+	    Map<World, Set<ChunkCoord>> validChunkSets = new HashMap<>();
 
-	    for (Map.Entry<String, Set<String>> entry : getAllWorldChunks().entrySet()) {
+	    for (Map.Entry<String, Set<ChunkCoord>> entry : getAllWorldChunks().entrySet()) {
 	        String worldName = entry.getKey();
-	        Set<String> chunks = entry.getValue();
+	        Set<ChunkCoord> chunks = entry.getValue();
 
 	        if (chunks.isEmpty()) continue;
 
@@ -235,18 +242,12 @@ public class ChunkManager {
 	    }
 
 	    // stream all batches
-	    for (Map.Entry<World, Set<String>> entry : validChunkSets.entrySet()) {
+	    for (Map.Entry<World, Set<ChunkCoord>> entry : validChunkSets.entrySet()) {
 	        World world = entry.getKey();
-	    	Set<String> chunks = entry.getValue();
+	    	Set<ChunkCoord> chunks = entry.getValue();
+	    	List<ChunkCoord> chunkList = new ArrayList<>(chunks);
 	    	
-	    	List<ChunkCoord> chunkCoords = chunks.stream()
-	    		    .map(s -> {
-	    		        String[] parts = s.split(",");
-	    		        return new ChunkCoord(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
-	    		    })
-	    		    .collect(Collectors.toList());
-	    	
-	        HttpUtil.streamChunkBatches(world, chunkCoords, Constants.BACKEND_CHUNK_BATCH_SIZE, Constants.BACKEND_CHUNK_BATCH_POST_DELAY_TICKS, () -> {
+	        HttpUtil.streamChunkBatches(world, chunkList, Constants.BACKEND_CHUNK_BATCH_SIZE, Constants.BACKEND_CHUNK_BATCH_POST_DELAY_TICKS, () -> {
 	            int remaining = pendingBatchCount.decrementAndGet();
 	            if (remaining <= 0) {
 	                sentChunksToDatabase = true;
@@ -263,11 +264,11 @@ public class ChunkManager {
 	    
 	    // compute total batch count 
 	    int totalBatches = 0;
-	    Map<World, Set<String>> validChunkSets = new HashMap<>();
+	    Map<World, Set<ChunkCoord>> validChunkSets = new HashMap<>();
 
-	    for (Map.Entry<String, Set<String>> entry : getNewlyExploredChunks().entrySet()) {
+	    for (Map.Entry<String, Set<ChunkCoord>> entry : getNewlyExploredChunks().entrySet()) {
 	        String worldName = entry.getKey();
-	        Set<String> chunks = entry.getValue();
+	        Set<ChunkCoord> chunks = entry.getValue();
 
 	        if (chunks.isEmpty()) continue;
 
@@ -299,18 +300,12 @@ public class ChunkManager {
 	    }
 
 	    // stream all batches
-	    for (Map.Entry<World, Set<String>> entry : validChunkSets.entrySet()) {
+	    for (Map.Entry<World, Set<ChunkCoord>> entry : validChunkSets.entrySet()) {
 	        World world = entry.getKey();
-	    	Set<String> chunks = entry.getValue();
+	    	Set<ChunkCoord> chunks = entry.getValue();
+	    	List<ChunkCoord> chunkList = new ArrayList<>(chunks);
 	    	
-	    	List<ChunkCoord> chunkCoords = chunks.stream()
-	    		    .map(s -> {
-	    		        String[] parts = s.split(",");
-	    		        return new ChunkCoord(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
-	    		    })
-	    		    .collect(Collectors.toList());
-	    	
-	        HttpUtil.streamChunkBatches(world, chunkCoords, Constants.BACKEND_CHUNK_BATCH_SIZE, Constants.BACKEND_CHUNK_BATCH_POST_DELAY_TICKS, () -> {
+	        HttpUtil.streamChunkBatches(world, chunkList, Constants.BACKEND_CHUNK_BATCH_SIZE, Constants.BACKEND_CHUNK_BATCH_POST_DELAY_TICKS, () -> {
 	            int remaining = pendingBatchCount.decrementAndGet();
 	            if (remaining <= 0) {
 	                sentChunksToDatabase = true;
@@ -326,11 +321,11 @@ public class ChunkManager {
 		return sentChunksToDatabase;
 	}
 	
-	public Map<String, Set<String>> getAllWorldChunks() {
+	public Map<String, Set<ChunkCoord>> getAllWorldChunks() {
 		return worldToChunks;
 	}
 	
-	public Map<String, Set<String>> getNewlyExploredChunks() {
+	public Map<String, Set<ChunkCoord>> getNewlyExploredChunks() {
 		return newlyExploredChunks;
 	}
 	

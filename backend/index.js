@@ -6,16 +6,22 @@ const playerRoutes = require('./routes/players');
 const adminRoutes = require('./routes/admin');
 const debugRoutes = require('./routes/debug');
 
+const apiKeyMiddleware = require('./middleware/api-key');
+
+const config = require('./config');
+
 const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use('/chunks', chunkRoutes);
-app.use('/players', playerRoutes);
-app.use('/admin', adminRoutes);
-app.use('/debug', debugRoutes);
 
-const PORT = process.env.PORT || 3000;
+app.use('/api', apiKeyMiddleware);
+app.use('/api/chunks', chunkRoutes);
+app.use('/api/players', playerRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/debug', debugRoutes);
+
+const PORT = config.port;
 
 app.listen(PORT, () => {
     console.log(`✅ Explora backend running on port ${PORT}`);

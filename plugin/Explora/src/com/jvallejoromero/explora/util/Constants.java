@@ -17,6 +17,7 @@ public class Constants {
     public static long PLAYER_UPDATE_TICKS;
     
     public static int BACKEND_PORT;
+    public static String BACKEND_API_KEY;
     public static int BACKEND_CHUNK_BATCH_POST_DELAY_TICKS;
     public static int BACKEND_CHUNK_BATCH_SIZE;
     public static String BACKEND_CHUNK_POST_URL;
@@ -33,6 +34,7 @@ public class Constants {
         CHUNK_UPDATE_TICKS = config.yml().getLong("chunk-update-ticks");
         PLAYER_UPDATE_TICKS = config.yml().getLong("player-update-ticks");
         BACKEND_PORT = config.yml().getInt("backend-port");
+        BACKEND_API_KEY = config.yml().getString("backend-api-key");
         BACKEND_CHUNK_BATCH_POST_DELAY_TICKS = config.yml().getInt("backend-chunk-batch-post-delay-ticks");
         BACKEND_CHUNK_BATCH_SIZE = config.yml().getInt("backend-chunk-batch-size");
         BACKEND_CHUNK_POST_URL = config.yml().getString("backend-chunk-post-url");
