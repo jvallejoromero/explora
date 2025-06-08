@@ -33,9 +33,7 @@ public class HttpUtil {
 	            
 	            int responseCode = conn.getResponseCode();
 
-	            if (Constants.DEBUG_MODE) {
-	                ExploraPlugin.log("&6&o[HTTP] DELETE " + targetUrl + " => " + responseCode);
-	            }
+	            ExploraPlugin.debug("&6[HTTP] DELETE " + targetUrl + " => " + responseCode);
 
 	            if (responseCode != 200) {
 	                ExploraPlugin.warn("[HTTP] DELETE failed with code: " + responseCode);
@@ -56,12 +54,10 @@ public class HttpUtil {
 		Bukkit.getScheduler().runTaskAsynchronously(ExploraPlugin.getInstance(), () -> {
 			try {
 				
-				if (Constants.DEBUG_MODE) {
-					if (targetUrl.contains(buildUrl(Constants.BACKEND_CHUNK_BATCH_POST_URL))) {
-						ExploraPlugin.log("&a&o[HTTP] Sending chunks to " + targetUrl);
-					} else if (!targetUrl.contains(buildUrl(Constants.BACKEND_PLAYER_POST_URL))){
-						ExploraPlugin.log("&a&o[HTTP] Sending to " + targetUrl + ": " + json);
-					}
+				if (targetUrl.contains(buildUrl(Constants.BACKEND_CHUNK_BATCH_POST_URL))) {
+					ExploraPlugin.debug("[HTTP] Sending chunks to " + targetUrl);
+				} else if (!targetUrl.contains(buildUrl(Constants.BACKEND_PLAYER_POST_URL))){
+					ExploraPlugin.debug("[HTTP] Sending to " + targetUrl + ": " + json);
 				}
 				
 				URL url = new URL(targetUrl);

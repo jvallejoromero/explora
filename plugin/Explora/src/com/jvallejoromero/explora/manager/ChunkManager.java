@@ -189,7 +189,7 @@ public class ChunkManager {
 		return chunks != null && chunks.contains(new ChunkCoord(x,z));
 	}
 
-	public void markChunkAsExplored(String world, int x, int z) {
+	public void recordChunkIfNew(String world, int x, int z) {
 	    ChunkCoord key = new ChunkCoord(x,z);
 
 	    if (!isChunkExplored(world, x, z)) {

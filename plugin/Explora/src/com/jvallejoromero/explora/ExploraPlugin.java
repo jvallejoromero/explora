@@ -10,6 +10,7 @@ import com.jvallejoromero.explora.util.ChunkUtils;
 import com.jvallejoromero.explora.util.Constants;
 import com.jvallejoromero.explora.util.HttpUtil;
 import com.jvallejoromero.explora.util.StringUtils;
+import com.jvallejoromero.explora.util.mcaselector.VersionHandler;
 import com.jvallejoromero.explora.yaml.CustomConfigurationFile;
 
 public class ExploraPlugin extends JavaPlugin {
@@ -23,6 +24,7 @@ public class ExploraPlugin extends JavaPlugin {
 	
 	@Override
 	public void onEnable() {
+		VersionHandler.init();
 		
 		instance = this;
 		config = new CustomConfigurationFile("config.yml", true);
@@ -80,7 +82,7 @@ public class ExploraPlugin extends JavaPlugin {
 	
 	@Override
 	public void onDisable() {
-		log("&asaving chunk data to files before disabling..");
+		log("&aSaving chunk data to files before disabling..");
 		
 		getChunkManager().saveNewlyExploredChunksToDisk();
 		
@@ -102,6 +104,11 @@ public class ExploraPlugin extends JavaPlugin {
 	
 	public static void warn(String message) {
 		Bukkit.getConsoleSender().sendMessage(StringUtils.colorize("[" + Constants.PLUGIN_NAME + "] " + "&c [WARNING] " + message));
+	}
+	
+	public static void debug(String message) {
+		if (!Constants.DEBUG_MODE) return;
+		Bukkit.getConsoleSender().sendMessage(StringUtils.colorize("[" + Constants.PLUGIN_NAME + "]" + "&8 [DEBUG] " + message));
 	}
 	
 	public void registerEvents() {

@@ -1,5 +1,8 @@
 package com.jvallejoromero.explora.util;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -147,14 +150,22 @@ public class ChunkUtils {
 	        try {
 	            RegionMCAFile region = new RegionMCAFile(regionFile);
 	            region.load(false); // load raw = false
-
+	            
 	            for (int i = 0; i < 1024; i++) {
 	                RegionChunk chunk = region.getChunk(i);
 	            	
 	                if (chunk != null && !chunk.isEmpty()) {
 	                    Point2i coord = chunk.getAbsoluteLocation();
-	                    ChunkCoord chunkCoord = new ChunkCoord(coord.getX(), coord.getZ());
 	                    
+	                    if ((regionDir.getParentFile().getName().equalsIgnoreCase("world")) && (coord.getX() == -112 && coord.getZ() == -30)) {
+	                    	ExploraPlugin.warn("HOME WAS FOUND!!");
+	                    	
+                            File outputDir = new File(plugin.getDataFolder(), "renders");
+                            outputDir.mkdirs(); // Create directory if it doesn't exist
+                            TileImageGenerator.generateAllZoomLevels(region, outputDir);
+	                    }
+	                    
+	                    ChunkCoord chunkCoord = new ChunkCoord(coord.getX(), coord.getZ());
 	                    exploredChunks.add(chunkCoord);
 	                }
 	            }
@@ -205,5 +216,17 @@ public class ChunkUtils {
 			ExploraPlugin.warn("Failed to write chunk JSON for " + worldName + ": " + e.getMessage());
 		}
 	}
+	
+	public static BufferedImage scaleImage(BufferedImage original, int zoomFactor) {
+		int width = original.getWidth() * zoomFactor;
+		int height = original.getHeight() * zoomFactor;
 
+		BufferedImage scaled = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = scaled.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR); // preserve pixel look
+		g.drawImage(original, 0, 0, width, height, null);
+		g.dispose();
+
+		return scaled;
+	}
 }

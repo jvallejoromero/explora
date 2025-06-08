@@ -22,6 +22,8 @@ sourceSets {
 }
 
 dependencies {
+    implementation 'org.atteo.classindex:classindex:3.12'
+    annotationProcessor 'org.atteo.classindex:classindex:3.12'
     implementation files('lib/gson-2.10.1.jar')
     implementation files('lib/mcaselector-2.5.2.jar')
     compileOnly files('lib/spigot-api-1.21.5-R0.1-SNAPSHOT-shaded.jar') 

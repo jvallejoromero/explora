@@ -37,7 +37,7 @@ public class ChunkTracker implements Listener {
 		sendActionBarMessage(player, "Chunk (X:" + chunkX + " Z:" + chunkZ + ") Explored: " + explored);
 		
 		if (!explored) {
-		    chunkManager.markChunkAsExplored(player.getWorld().getName(), chunkX, chunkZ);
+		    chunkManager.recordChunkIfNew(player.getWorld().getName(), chunkX, chunkZ);
 
 		    if (ExploraPlugin.hasLoadedChunks()) {
 		        player.sendMessage(StringUtils.colorize("&aYou explored a new chunk!"));
