@@ -23,7 +23,10 @@ import com.google.gson.JsonParser;
 import com.jvallejoromero.explora.ExploraPlugin;
 import com.jvallejoromero.explora.util.ChunkCoord;
 import com.jvallejoromero.explora.util.Constants;
+import com.jvallejoromero.explora.util.FileUtil;
 import com.jvallejoromero.explora.util.HttpUtil;
+import com.jvallejoromero.explora.util.RegionCoord;
+import com.jvallejoromero.explora.util.TileImageGenerator;
 
 public class ChunkManager {
 
@@ -57,10 +60,16 @@ public class ChunkManager {
 			if (hasSentChunksToDatabase()) {
 				saveNewlyExploredChunksToDisk();
 				
-				sendNewChunksToDatabase(() -> {
-					ExploraPlugin.log("&aUpdated database and saved new chunks to disk");
+				sendNewChunksToDatabase(() -> {					
+					Map<String, Set<RegionCoord>> regions = getRegionsToRerender();
 					getNewlyExploredChunks().clear();
-				});
+					
+					TileImageGenerator.rerenderUpdatedRegionsAsync(regions, () -> {
+						FileUtil.sendRerenderedTilesToBackendAsync(regions, () -> {
+							ExploraPlugin.log("&aUpdated database and saved new chunks to disk.");
+						});
+					});
+				});	
 			}
 		}, Constants.CHUNK_UPDATE_TICKS, Constants.CHUNK_UPDATE_TICKS);
 	}
@@ -315,6 +324,23 @@ public class ChunkManager {
 	            }
 	        });
 	    }
+	}
+	
+	public Map<String, Set<RegionCoord>> getRegionsToRerender() {
+	    Map<String, Set<RegionCoord>> regionsToRerender = new HashMap<>();
+
+	    for (Map.Entry<String, Set<ChunkCoord>> entry : newlyExploredChunks.entrySet()) {
+	        String world = entry.getKey();
+	        Set<ChunkCoord> chunks = entry.getValue();
+
+	        Set<RegionCoord> regionSet = regionsToRerender.computeIfAbsent(world, k -> new HashSet<>());
+
+	        for (ChunkCoord chunk : chunks) {
+	            RegionCoord region = new RegionCoord(chunk.getX(), chunk.getZ());
+	            regionSet.add(region); 
+	        }
+	    }
+	    return regionsToRerender;
 	}
 	
 	public boolean hasSentChunksToDatabase() {

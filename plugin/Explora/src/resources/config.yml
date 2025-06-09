@@ -11,6 +11,11 @@ scan-region-files: true
 # where explored chunk data will be saved in JSON format.
 chunk-data-folder: chunk-data
 
+# Specifies the relative folder path (inside the plugin's data folder)
+# where rendered region tiles and metadata will be saved.
+# These tiles are used by the backend/frontend map viewer.
+render-data-folder: render-data
+
 # The interval (in server ticks) between updates to explored chunk data.
 # 20 ticks = 1 second, so 6000 = 5 minutes.
 chunk-update-ticks: 6000
@@ -46,6 +51,10 @@ backend-player-post-url: "http://localhost:%port%/api/players/update"
 # WARNING: This will delete all stored chunk data.
 # The `secret` query param is used for basic protection.
 backend-delete-chunks-url: "http://localhost:%port%/api/admin/clear-chunks"
+
+# Endpoint for uploading a ZIP file containing rendered PNG tiles and JSON metadata.
+# These files are extracted and stored on the backend to serve the frontend map viewer.
+backend-upload-tile-zip-url: "http://localhost:%port%/api/upload/tile-zip"
 
 # Delay (in ticks) between sending each batch of chunk data to avoid overloading the backend.
 # Lower values = faster transmission but higher load.

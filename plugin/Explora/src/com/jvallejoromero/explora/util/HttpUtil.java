@@ -1,9 +1,17 @@
 package com.jvallejoromero.explora.util;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -92,6 +100,118 @@ public class HttpUtil {
 		});
 	}
 	
+    public static void postZipBytes(byte[] zipBytes, Runnable onSuccess, boolean deleteAll) {
+    	try {
+            String boundary = "----ExploraBoundary" + System.currentTimeMillis();
+            String LINE_FEED = "\r\n";
+            String backendUrl = buildUrl(Constants.BACKEND_UPLOAD_TILE_ZIP_URL);
+            
+            backendUrl += backendUrl.contains("?") ? "&" : "?";
+            backendUrl += "deleteAll=" + deleteAll;
+
+            HttpURLConnection conn = (HttpURLConnection) new URL(backendUrl).openConnection();
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            conn.setRequestProperty("x-api-key", Constants.BACKEND_API_KEY);
+
+            try (OutputStream output = conn.getOutputStream();
+                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(output, "UTF-8"), true)) {
+
+                writer.append("--").append(boundary).append(LINE_FEED);
+                writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"tiles.zip\"").append(LINE_FEED);
+                writer.append("Content-Type: application/zip").append(LINE_FEED);
+                writer.append(LINE_FEED).flush();
+
+                output.write(zipBytes);
+                output.flush();
+
+                writer.append(LINE_FEED).flush();
+                writer.append("--").append(boundary).append("--").append(LINE_FEED).flush();
+            }
+
+            int status = conn.getResponseCode();
+            if (status == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    ExploraPlugin.debug("&8[HTTP] Upload successful: " + reader.lines().reduce("", String::concat));
+                    
+                    if (onSuccess != null) {
+                    	Bukkit.getScheduler().runTask(ExploraPlugin.getInstance(), onSuccess);
+                    }
+                }
+            } else {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+                    ExploraPlugin.warn("[HTTP] Upload failed (" + status + "): " + reader.lines().reduce("", String::concat));
+                }
+            }
+            conn.disconnect();
+    	} catch (Exception ex) {
+    		ExploraPlugin.warn("[HTTP] Failed to upload zip bytes: " + ex.getMessage());
+    		ex.printStackTrace();
+    	}
+    }
+	
+	public static void uploadZipToBackendAsync(File zipFile) {
+		Bukkit.getScheduler().runTaskAsynchronously(ExploraPlugin.getInstance(), () -> {
+			try {
+				String boundary = "----ExploraBoundary" + System.currentTimeMillis();
+				String LINE_FEED = "\r\n";
+
+				String targetUrl = buildUrl(Constants.BACKEND_UPLOAD_TILE_ZIP_URL);
+				URL url = new URL(targetUrl);
+
+				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+				conn.setUseCaches(false);
+				conn.setDoOutput(true);
+				conn.setDoInput(true);
+				conn.setRequestMethod("POST");
+				conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+				conn.setRequestProperty("x-api-key", Constants.BACKEND_API_KEY);
+
+				try (OutputStream outputStream = conn.getOutputStream();
+						PrintWriter writer = new PrintWriter(new OutputStreamWriter(outputStream, "UTF-8"), true)) {
+
+					// Start multipart file part
+					writer.append("--").append(boundary).append(LINE_FEED);
+					writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"tiles.zip\"")
+							.append(LINE_FEED);
+					writer.append("Content-Type: application/zip").append(LINE_FEED);
+					writer.append(LINE_FEED).flush();
+
+					// Write file bytes
+					Files.copy(zipFile.toPath(), outputStream);
+					outputStream.flush();
+
+					writer.append(LINE_FEED).flush();
+					writer.append("--").append(boundary).append("--").append(LINE_FEED).flush();
+				}
+
+				int status = conn.getResponseCode();
+
+				if (status == HttpURLConnection.HTTP_OK) {
+					try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+						String responseLine;
+						StringBuilder response = new StringBuilder();
+						while ((responseLine = in.readLine()) != null) {
+							response.append(responseLine);
+						}
+						ExploraPlugin.debug("&8[HTTP] Upload successful: " + response);
+					}
+				} else {
+					try (InputStream errorStream = conn.getErrorStream()) {
+						String errorMsg = errorStream != null ? new String(errorStream.readAllBytes()) : "(no error message)";
+						ExploraPlugin.warn("[HTTP] Upload failed with status " + status + ": " + errorMsg);
+					}
+				}
+				conn.disconnect();
+
+			} catch (IOException e) {
+				ExploraPlugin.warn("[HTTP] Upload failed: " + e.getMessage());
+				e.printStackTrace();
+			}
+		});
+	}
+    
 	public static void sendDeleteChunksRequest(Runnable onSuccess) {
 		String targetUrl = buildUrl(Constants.BACKEND_DELETE_CHUNKS_URL);
 		deleteRequest(targetUrl, onSuccess);

@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
+import net.querz.mcaselector.util.math.Bits;
 import net.querz.mcaselector.version.ChunkRenderer;
 import net.querz.mcaselector.version.ColorMapping;
 import net.querz.mcaselector.version.Helper;
@@ -128,8 +129,118 @@ public class ChunkRenderer_1_21 implements ChunkRenderer<CompoundTag, String> {
 	public void drawLayer(CompoundTag root, ColorMapping<CompoundTag, String> colorMapping, int x, int z, int scale, int[] pixelBuffer, int height) {}
 
 	@Override
-	public void drawCaves(CompoundTag root, ColorMapping<CompoundTag, String> colorMapping, int x, int z, int scale, int[] pixelBuffer, short[] terrainHeights, int height) {}
+	public void drawCaves(CompoundTag root, ColorMapping<CompoundTag, String> colorMapping, int x, int z, int scale, int[] pixelBuffer, short[] terrainHeights, int height) {
+	    ListTag sections = Helper.tagFromCompound(root, "sections");
+	    if (sections == null || sections.getElementType() != Tag.Type.COMPOUND) return;
 
+	    int yMin = Helper.intFromCompound(root, "yPos", -4);
+	    int scaleBits = Bits.msbPosition(scale);
+	    int absHeight = height - yMin * 16;
+	    int yMax = 1 + (height >> 4);
+	    int sMax = yMax - yMin;
+
+	    CompoundTag[] indexedSections = new CompoundTag[sMax];
+	    ListTag[] indexedPalettes = new ListTag[sMax];
+	    LongBuffer[] indexedBlockStates = new LongBuffer[sMax];
+	    ListTag[] indexedBiomePalettes = new ListTag[sMax];
+	    LongBuffer[] indexedBiomeData = new LongBuffer[sMax];
+	    int[] bits = new int[sMax];
+	    int[] cleanBits = new int[sMax];
+	    int[] indexesPerLong = new int[sMax];
+	    int[] biomeBits = new int[sMax];
+	    int[] biomeCleanBits = new int[sMax];
+	    int[] biomeIndexesPerLong = new int[sMax];
+	    int[] startHeight = new int[sMax];
+	    int[] sectionHeight = new int[sMax];
+	    boolean[] indexed = new boolean[sMax];
+
+	    sections.iterateType(CompoundTag.class).forEach(s -> {
+	        int y = Helper.numberFromCompound(s, "Y", yMin - 1).intValue();
+	        if (y >= yMin && y < yMax) {
+	            indexedSections[y - yMin] = s;
+	        }
+	    });
+
+	    for (int cx = 0; cx < 16; cx += scale) {
+	        zLoop:
+	        for (int cz = 0; cz < 16; cz += scale) {
+	            int pixelIndex = (z + (cz >> scaleBits)) * (512 >> scaleBits) + (x + (cx >> scaleBits));
+	            int ignored = 0;
+	            boolean doneSkipping = false;
+
+	            for (int i = sMax - (sMax - (absHeight >> 4)); i >= 0; i--) {
+	                if (indexedSections[i] == null) continue;
+
+	                if (!indexed[i]) {
+	                    CompoundTag section = indexedSections[i];
+	                    CompoundTag blockStatesTag = Helper.tagFromCompound(section, "block_states");
+	                    CompoundTag biomesTag = Helper.tagFromCompound(section, "biomes");
+
+	                    indexedPalettes[i] = Helper.tagFromCompound(blockStatesTag, "palette");
+	                    Tag blockStateDataTag = blockStatesTag.get("data");
+	                    if (blockStateDataTag instanceof LongArrayTag) {
+	                        long[] data = ((LongArrayTag) blockStateDataTag).getValue();
+	                        ByteBuffer buffer = ByteBuffer.allocate(data.length * Long.BYTES);
+	                        LongBuffer longBuf = buffer.asLongBuffer();
+	                        longBuf.put(data);
+	                        longBuf.flip();
+	                        indexedBlockStates[i] = longBuf;
+	                        bits[i] = data.length >> 6;
+	                    } else {
+	                        bits[i] = 0;
+	                    }
+
+	                    indexedBiomePalettes[i] = Helper.tagFromCompound(biomesTag, "palette");
+	                    Tag biomeDataTag = biomesTag.get("data");
+	                    if (biomeDataTag instanceof LongArrayTag) {
+	                        long[] biomes = ((LongArrayTag) biomeDataTag).getValue();
+	                        ByteBuffer buffer = ByteBuffer.allocate(biomes.length * Long.BYTES);
+	                        LongBuffer longBuf = buffer.asLongBuffer();
+	                        longBuf.put(biomes);
+	                        longBuf.flip();
+	                        indexedBiomeData[i] = longBuf;
+	                        biomeBits[i] = biomes.length >> 3;
+	                    } else {
+	                        biomeBits[i] = 0;
+	                    }
+
+	                    cleanBits[i] = ((2 << (bits[i] - 1)) - 1);
+	                    indexesPerLong[i] = (int) (64D / bits[i]);
+	                    biomeCleanBits[i] = ((2 << (biomeBits[i] - 1)) - 1);
+	                    biomeIndexesPerLong[i] = (int) (64D / biomeBits[i]);
+
+	                    startHeight[i] = absHeight >> 4 == i ? absHeight & 0xF : 15;
+	                    sectionHeight[i] = (i + yMin) * 16;
+	                    indexed[i] = true;
+	                }
+
+	                ListTag palette = indexedPalettes[i];
+	                if (palette == null) continue;
+	                LongBuffer blockStates = indexedBlockStates[i];
+	                LongBuffer biomes = indexedBiomeData[i];
+	                ListTag biomePalette = indexedBiomePalettes[i];
+
+	                for (int cy = startHeight[i]; cy >= 0; cy--) {
+	                    CompoundTag blockData = getBlock(cx, cy, cz, blockStates, bits[i], cleanBits[i], indexesPerLong[i], palette);
+	                    if (blockData == null) continue;
+
+	                    if (!colorMapping.isTransparent(blockData) && !colorMapping.isFoliage(blockData)) {
+	                        if (doneSkipping) {
+	                            String biome = getBiome(cx, cy, cz, biomes, biomeBits[i], biomeCleanBits[i], biomeIndexesPerLong[i], biomePalette);
+	                            pixelBuffer[pixelIndex] = colorMapping.getRGB(blockData, biome);
+	                            terrainHeights[pixelIndex] = (short) (sectionHeight[i] + cy);
+	                            continue zLoop;
+	                        }
+	                        ignored++;
+	                    } else if (ignored > 0) {
+	                        doneSkipping = true;
+	                    }
+	                }
+	            }
+	        }
+	    }
+	}
+	
 	@Override
 	public CompoundTag minimizeChunk(CompoundTag root) {
 		CompoundTag minData = new CompoundTag();

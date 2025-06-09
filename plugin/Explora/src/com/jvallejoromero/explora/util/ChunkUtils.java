@@ -31,7 +31,7 @@ import net.querz.mcaselector.util.point.Point2i;
 
 public class ChunkUtils {
 
-	private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();	
+	private static final Gson gson = new GsonBuilder().create();	
 	private static ExploraPlugin plugin = ExploraPlugin.getInstance();
 	
 	
@@ -92,7 +92,7 @@ public class ChunkUtils {
 
 	        for (File subdir : subdirs) {
 	            if (subdir.getName().equals("region")) {
-	                String dimensionName = getRelativeDimensionName(worldFolder, subdir);
+	                String dimensionName = worldFolder.getName();
 	                regionFolders.put(dimensionName, subdir);
 	            } else {
 	                toSearch.add(subdir);
@@ -155,16 +155,7 @@ public class ChunkUtils {
 	                RegionChunk chunk = region.getChunk(i);
 	            	
 	                if (chunk != null && !chunk.isEmpty()) {
-	                    Point2i coord = chunk.getAbsoluteLocation();
-	                    
-	                    if ((regionDir.getParentFile().getName().equalsIgnoreCase("world")) && (coord.getX() == -112 && coord.getZ() == -30)) {
-	                    	ExploraPlugin.warn("HOME WAS FOUND!!");
-	                    	
-                            File outputDir = new File(plugin.getDataFolder(), "renders");
-                            outputDir.mkdirs(); // Create directory if it doesn't exist
-                            TileImageGenerator.generateAllZoomLevels(region, outputDir);
-	                    }
-	                    
+	                    Point2i coord = chunk.getAbsoluteLocation();	                    
 	                    ChunkCoord chunkCoord = new ChunkCoord(coord.getX(), coord.getZ());
 	                    exploredChunks.add(chunkCoord);
 	                }

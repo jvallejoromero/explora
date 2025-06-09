@@ -5,11 +5,10 @@ const chunkRoutes = require('./routes/chunks');
 const playerRoutes = require('./routes/players');
 const adminRoutes = require('./routes/admin');
 const debugRoutes = require('./routes/debug');
+const uploadRoutes = require('./routes/upload');
 
 const apiKeyMiddleware = require('./middleware/api-key');
-
 const config = require('./config');
-
 const app = express();
 
 app.use(cors());
@@ -20,6 +19,7 @@ app.use('/api/chunks', chunkRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/upload', uploadRoutes);
 
 const PORT = config.port;
 
