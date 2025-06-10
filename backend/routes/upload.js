@@ -16,12 +16,17 @@ function deleteFolderRecursive(folderPath) {
     }
 }
 
+/**
+ * @typedef {Object} UploadZipRequestBody
+ * @property {file} file - The uploaded zip file
+ * @property {boolean} deleteExisting - Whether to delete existing tiles before uploading
+ */
 router.post("/tile-zip", upload.single("file"), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const shouldDeleteAll = req.query.deleteAll === "true";
+    const shouldDeleteAll = req.query.deleteExisting === "true";
     const zipBuffer = req.file.buffer;
 
     try {

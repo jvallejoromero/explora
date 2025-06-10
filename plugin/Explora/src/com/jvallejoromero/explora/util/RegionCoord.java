@@ -1,8 +1,8 @@
 package com.jvallejoromero.explora.util;
 
 public class RegionCoord {
-    private final int regionX;
-    private final int regionZ;
+    private int regionX;
+    private int regionZ;
 
     public RegionCoord(int chunkX, int chunkZ) {
         this.regionX = chunkX >> 5; // 1 region = 32 chunks
@@ -27,6 +27,13 @@ public class RegionCoord {
     @Override
     public String toString() {
         return "r." + regionX + "." + regionZ;
+    }
+    
+    public static RegionCoord fromRegionCoords(int regionX, int regionZ) {
+        RegionCoord coord = new RegionCoord(0, 0);
+        coord.regionX = regionX;
+        coord.regionZ = regionZ;
+        return coord;
     }
 }
 

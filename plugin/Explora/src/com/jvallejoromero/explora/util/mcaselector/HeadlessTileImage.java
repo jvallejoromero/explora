@@ -44,42 +44,6 @@ public final class HeadlessTileImage {
 	
 	private HeadlessTileImage() {}
 
-	public static BufferedImage generateBufferedImage(RegionMCAFile mcaFile, boolean nether, int scale) {
-		int size = Tile.SIZE / scale;
-		int chunkSize = Tile.CHUNK_SIZE / scale;
-		int pixels = Tile.PIXELS / (scale * scale);
-
-		try {
-			int[] pixelBuffer = new int[pixels];
-			int[] waterPixels = ConfigProvider.WORLD.getShade() && ConfigProvider.WORLD.getShadeWater() && !ConfigProvider.WORLD.getRenderCaves() ? new int[pixels] : null;
-			short[] terrainHeights = new short[pixels];
-			short[] waterHeights = ConfigProvider.WORLD.getShade() && ConfigProvider.WORLD.getShadeWater() && !ConfigProvider.WORLD.getRenderCaves() ? new short[pixels] : null;
-			
-			for (int cx = 0; cx < Tile.SIZE_IN_CHUNKS; cx++) {
-				for (int cz = 0; cz < Tile.SIZE_IN_CHUNKS; cz++) {
-					int index = cz * Tile.SIZE_IN_CHUNKS + cx;
-					Chunk data = mcaFile.getChunk(index);
-					if (data == null) continue;
-					drawChunkImage(data, nether, cx * chunkSize, cz * chunkSize, scale, pixelBuffer, waterPixels, terrainHeights, waterHeights);
-				}
-			}
-
-			if (nether) {
-				flatShade(pixelBuffer, terrainHeights, scale);
-			} else if (ConfigProvider.WORLD.getShade() && !ConfigProvider.WORLD.getRenderLayerOnly()) {
-				shade(pixelBuffer, waterPixels, terrainHeights, waterHeights, scale);
-			}
-
-			BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-			img.setRGB(0, 0, size, size, pixelBuffer, 0, size);
-			return img;
-		} catch (Exception ex) {
-			ExploraPlugin.warn("failed to create image for MCAFile: " +  mcaFile.getFile().getName() + ": " + ex.getMessage());
-			return null;
-		}
-	}
-	
-
 	public static BufferedImage generateBufferedImageOptimized(RegionMCAFile mcaFile, boolean nether, int scale) {
 	    int size = Tile.SIZE / scale;
 	    int chunkSize = Tile.CHUNK_SIZE / scale;
@@ -128,27 +92,6 @@ public final class HeadlessTileImage {
 	        ExploraPlugin.warn("failed to create image for MCAFile: " +  mcaFile.getFile().getName() + ": " + ex.getMessage());
 	        return null;
 	    }
-	}
-	
-	public static BufferedImage generateZoomedBufferedImage(RegionMCAFile mcaFile, boolean nether, int scale, int zoomFactor) {
-	    BufferedImage base = generateBufferedImage(mcaFile, nether, scale);
-	    if (base == null || zoomFactor <= 1) return base;
-
-	    int w = base.getWidth();
-	    int h = base.getHeight();
-	    BufferedImage zoomed = new BufferedImage(w * zoomFactor, h * zoomFactor, BufferedImage.TYPE_INT_ARGB);
-
-	    for (int y = 0; y < h; y++) {
-	        for (int x = 0; x < w; x++) {
-	            int rgb = base.getRGB(x, y);
-	            for (int dy = 0; dy < zoomFactor; dy++) {
-	                for (int dx = 0; dx < zoomFactor; dx++) {
-	                    zoomed.setRGB(x * zoomFactor + dx, y * zoomFactor + dy, rgb);
-	                }
-	            }
-	        }
-	    }
-	    return zoomed;
 	}
 	
 	public static BufferedImage generateZoomedBufferedImageOptimized(RegionMCAFile mcaFile, boolean nether, int scale, int zoomFactor) {

@@ -1,6 +1,8 @@
 package com.jvallejoromero.explora;
 
 import java.io.File;
+import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,6 +14,7 @@ import com.jvallejoromero.explora.util.ChunkUtils;
 import com.jvallejoromero.explora.util.Constants;
 import com.jvallejoromero.explora.util.FileUtil;
 import com.jvallejoromero.explora.util.HttpUtil;
+import com.jvallejoromero.explora.util.RegionCoord;
 import com.jvallejoromero.explora.util.StringUtils;
 import com.jvallejoromero.explora.util.TileImageGenerator;
 import com.jvallejoromero.explora.util.mcaselector.VersionHandler;
@@ -41,8 +44,9 @@ public class ExploraPlugin extends JavaPlugin {
 		if (Constants.SHOULD_SCAN_FOLDERS) {
 			System.out.println(" ");
 			System.out.println(" ");
-			log("&6Warning: scan-region-files has been set to true. Please wait while world folders are scanned for region files. "
-					+ "This may take a while. Do NOT shut down the server until this is finished!");
+			log("&eWARNING: scan-region-files has been set to true.");
+			log("&ePlease wait while world folders are scanned for region files.");
+			log("&eThis may take a while. Do NOT shut down the server until this is finished!");
 			System.out.println(" ");
 			System.out.println(" ");
 			
@@ -62,7 +66,7 @@ public class ExploraPlugin extends JavaPlugin {
 						ExploraPlugin.log("&aLoaded chunk data.");
 						System.out.println(" ");
 						System.out.println(" ");
-						ExploraPlugin.log("&6&oAttempting to send chunk data to database.. This might take a while ..");
+						ExploraPlugin.log("&eAttempting to send chunk data to database.. This might take a while ..");
 						System.out.println(" ");
 						System.out.println(" ");
 						long syncStartTime = System.currentTimeMillis();
@@ -74,24 +78,24 @@ public class ExploraPlugin extends JavaPlugin {
 								
 								System.out.println(" ");
 								System.out.println(" ");
-								log("&6 Verifying render files and metadata..");
-								log("&6 This could take a while. Please do not interrupt the server!");
+								log("&e Generating render files and metadata..");
+								log("&e This could take a while. Please do not interrupt the server!");
 								System.out.println(" ");
 								System.out.println(" ");
 								
 								File outputDir = Constants.RENDER_DATA_PATH.toFile();
 								
 								TileImageGenerator.generateTilesAsyncOptimized(2, outputDir, () -> {
-									log("&aFinished verifiying rendered files and metadata!");
+									log("&aFinished generating render files and metadata!");
 									
 									System.out.println(" ");
 									System.out.println(" ");
-									log("&6 Sending rendered files and metadata to database..");
+									log("&e Sending render files and metadata to database..");
 									System.out.println(" ");
 									System.out.println(" ");
 									
 									FileUtil.sendRegionDataToBackendAsync(() -> {
-										log("&aFinished sending rendered files and metadata to database.");
+										log("&aFinished sending render files and metadata to database.");
 									});
 								});
 							});
@@ -105,6 +109,29 @@ public class ExploraPlugin extends JavaPlugin {
 			chunkManager.init(() -> {
 				chunksLoaded = true;
 				ExploraPlugin.log("&aLoaded chunk data.");
+				
+				Bukkit.getScheduler().runTaskAsynchronously(this, ()-> {
+					
+					System.out.println(" ");
+					log("&eVerifying render files and metadata..");
+					System.out.println(" ");
+					
+					Map<String, Set<RegionCoord>> missingRegions = TileImageGenerator.getMissingRenderRegions();
+					if (missingRegions.isEmpty()) {
+						log("&aFinished verifying render files. No missing files found.");
+						return;
+					}
+					
+					System.out.println(" ");
+					log("&eFound missing render files, preparing to render..");
+					System.out.println(" ");
+					
+					TileImageGenerator.rerenderUpdatedRegionsAsync(missingRegions, () -> {
+						FileUtil.sendRerenderedTilesToBackendAsync(missingRegions, () -> {
+							ExploraPlugin.log("&aRendered missing regions and updated database.");
+						});
+					});
+				});
 			});
 		}
 		

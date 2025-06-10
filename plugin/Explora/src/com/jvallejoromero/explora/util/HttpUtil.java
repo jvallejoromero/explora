@@ -100,14 +100,14 @@ public class HttpUtil {
 		});
 	}
 	
-    public static void postZipBytes(byte[] zipBytes, Runnable onSuccess, boolean deleteAll) {
+    public static void postZipBytes(byte[] zipBytes, Runnable onSuccess, boolean deleteExisting) {
     	try {
             String boundary = "----ExploraBoundary" + System.currentTimeMillis();
             String LINE_FEED = "\r\n";
             String backendUrl = buildUrl(Constants.BACKEND_UPLOAD_TILE_ZIP_URL);
             
             backendUrl += backendUrl.contains("?") ? "&" : "?";
-            backendUrl += "deleteAll=" + deleteAll;
+            backendUrl += "deleteExisting=" + deleteExisting;
 
             HttpURLConnection conn = (HttpURLConnection) new URL(backendUrl).openConnection();
             conn.setDoOutput(true);

@@ -1,0 +1,32 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body, #root {
+    height: 100%;
+    width: 100%;
+    font-family: 'sans-serif';
+}
+
+.leaflet-image-layer {
+    outline: 1px dashed rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    transition: opacity 0.25s ease-in;
+    image-rendering: pixelated !important;
+}
+
+.leaflet-image-layer.leaflet-zoom-animated {
+    opacity: 1;
+}
+
+.tile-fade-out {
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+}
+
+.tile-fade-in {
+    opacity: 1;
+    transition: opacity 0.3s ease-in;
+}

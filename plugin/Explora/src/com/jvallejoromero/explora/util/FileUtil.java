@@ -20,6 +20,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 
 import com.jvallejoromero.explora.ExploraPlugin;
 
@@ -139,4 +140,21 @@ public class FileUtil {
 		    });
 		});
 	}
+	
+
+    public static File getPrimaryRegionFolderForWorld(World world) {
+        File baseDir = world.getWorldFolder();
+        String name = world.getName().toLowerCase();
+
+        if (name.contains("nether")) {
+            // world_nether -> world_nether/DIM-1/region
+            return new File(baseDir, "DIM-1/region");
+        } else if (name.contains("end")) {
+            // world_the_end -> world_the_end/DIM1/region
+            return new File(baseDir, "DIM1/region");
+        } else {
+            // Overworld -> world/region
+            return new File(baseDir, "region");
+        }
+    }
 }
