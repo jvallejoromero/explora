@@ -3,27 +3,42 @@ import { MapContainer } from 'react-leaflet';
 import L from 'leaflet';
 
 import { COLOR_PRIMARY, COLOR_SECONDARY, DEFAULT_FONT, LOGO_IMAGE } from '../constants'
-import { FaBars, FaCheckCircle } from "react-icons/fa";
+import { FaBars, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import "@fontsource/inter/600.css";
 
+import {useServerStatus} from "../hooks/ServerStatus.ts";
 import VisibleTileLoader from "../components/VisibleTileLoader.tsx";
 import WorldsDropdown from "../components/WorldsDropdown.tsx";
+import MapOverlay from "../components/MapOverlay.tsx";
+import NetherPortalTransition from "../components/NetherPortalTransition.tsx";
+import PlayersOverlay from "../components/PlayersOverlay.tsx";
 
 const ExploraMapViewer = () => {
-
+    const { serverStatus, connectedToBackend } = useServerStatus();
     const [selectedWorld, setSelectedWorld] = useState<string>('world');
+    const [nextWorld, setNextWorld] = useState<string | null>(null);
+    const [transitioning, setTransitioning] = useState(false);
 
     const handleWorldSelect = (world: string) => {
         if (world.toLowerCase() === "overworld") {
-            setSelectedWorld("world");
+            setNextWorld("world");
         } else if (world.toLowerCase().includes("nether")) {
-            setSelectedWorld("world_nether");
+            setNextWorld("world_nether");
         } else if (world.toLowerCase().includes("end")) {
-            setSelectedWorld("world_the_end");
+            setNextWorld("world_the_end");
         } else {
-            setSelectedWorld(world);
+            setNextWorld(world);
         }
-        console.log("SELECTED WORLD", selectedWorld);
+        setTransitioning(true);
+    }
+
+    const handleTransitionComplete = () => {
+        if (nextWorld) {
+            console.log("NEXT WORLD=", nextWorld);
+            setSelectedWorld(nextWorld);
+            setNextWorld(null);
+        }
+        setTransitioning(false);
     }
 
     return (
@@ -42,10 +57,20 @@ const ExploraMapViewer = () => {
                 <div style={styles.worldContainer}>
                     <WorldsDropdown
                         onSelectWorld={handleWorldSelect}
+                        disabled={!connectedToBackend}
                     />
                     <div style={styles.worldStatus}>
-                        <FaCheckCircle size={18} color="#43ad95" />
-                        <div style={{color: "#43ad95"}}>Online</div>
+                        {serverStatus?.isOnline ? (
+                            <>
+                                <FaCheckCircle size={18} color="#43ad95" />
+                                <div style={{color: "#43ad95"}}>Online</div>
+                            </>
+                        ) : (
+                            <>
+                                <FaTimesCircle size={18} color="#e25353" />
+                                <div style={{color: "#e25353"}}>Offline</div>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -59,7 +84,20 @@ const ExploraMapViewer = () => {
                         maxZoom={2}
                         style={styles.map}
                     >
-                        <VisibleTileLoader key={selectedWorld} world={selectedWorld} />
+                        {connectedToBackend ? (
+                            <>
+                                {transitioning && <NetherPortalTransition onComplete={handleTransitionComplete} />}
+                                <MapOverlay />
+                                <VisibleTileLoader key={selectedWorld} world={selectedWorld} />
+                                <PlayersOverlay world={selectedWorld}/>
+                            </>
+                        ) : (
+                            <>
+                                <div style={styles.mapMessageContainer}>
+                                    <div style={styles.errorMsg}>Connection to backend server failed. Is it online?</div>
+                                </div>
+                            </>
+                        )}
                     </MapContainer>
                 </div>
 
@@ -123,17 +161,29 @@ const styles = {
         gap: 5,
     } as React.CSSProperties,
     mapContainer: {
+        position: "relative",
         flex: 1,
         marginTop: 25,
         borderRadius: 10,
         overflow: "hidden",
         boxShadow: "0 0 8px rgba(0,0,0,0.2)",
-    },
+    } as React.CSSProperties,
     map: {
         height: "500px",
-        width: "65%",
+        width: "100%",
         backgroundColor: "#0e0e0e",
         borderRadius: 10,
         overflow: "hidden",
+    },
+    mapMessageContainer: {
+        display: "flex",
+        height: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 25,
+    },
+    errorMsg: {
+        color: "#e25353",
+        fontSize: "clamp(12px, 2vw, 24px)",
     },
 };

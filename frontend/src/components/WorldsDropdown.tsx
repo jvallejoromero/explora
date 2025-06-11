@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import "../css/worlds-dropdown.css";
+import {useServerStatus} from "../hooks/ServerStatus.ts";
 
 const apiKey = import.meta.env.VITE_BACKEND_API_KEY;
+const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
 
 type WorldDropdownProps = {
   onSelectWorld: (world: string) => void;
+  disabled: boolean;
 };
 
 const worldNameMap: Record<string, string> = {
@@ -13,17 +16,24 @@ const worldNameMap: Record<string, string> = {
   world_the_end: "The End",
 };
 
-const WorldDropdown: React.FC<WorldDropdownProps> = ({ onSelectWorld }) => {
+const WorldDropdown: React.FC<WorldDropdownProps> = ({ onSelectWorld, disabled }) => {
+  const { connectedToBackend } = useServerStatus();
+
   const [worlds, setWorlds] = useState<string[]>([]);
   const [selectedWorld, setSelectedWorld] = useState<string>('Overworld');
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const displayName = worldNameMap[selectedWorld] ?? selectedWorld;
 
   useEffect(() => {
+    if (disabled) {
+      setWorlds(["None available"]);
+      return;
+    }
+
     // Fetch worlds from backend
-    fetch(`http://localhost:3000/api/tiles/available-worlds?apiKey=${apiKey}`)
+    fetch(baseUrl + `/tiles/available-worlds?apiKey=${apiKey}`)
       .then(res => res.json())
       .then(data => {
         const parsedWorlds = data.worlds.map((world: string) => {
@@ -31,8 +41,10 @@ const WorldDropdown: React.FC<WorldDropdownProps> = ({ onSelectWorld }) => {
         });
         setWorlds(parsedWorlds || []);
       })
-      .catch(err => console.error('Failed to fetch worlds:', err));
-  }, []);
+      .catch((err) => {
+        console.error('Failed to fetch worlds:', err)
+      });
+  }, [connectedToBackend]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,6 +57,7 @@ const WorldDropdown: React.FC<WorldDropdownProps> = ({ onSelectWorld }) => {
   }, []);
 
   const handleSelect = (world: string) => {
+    if (disabled) return;
     setSelectedWorld(world);
     setIsOpen(false);
     onSelectWorld(world);

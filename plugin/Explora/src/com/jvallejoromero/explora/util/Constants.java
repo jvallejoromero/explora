@@ -16,6 +16,7 @@ public class Constants {
     
     public static long CHUNK_UPDATE_TICKS;
     public static long PLAYER_UPDATE_TICKS;
+    public static long SERVER_STATUS_UPDATE_TICKS;
     
     public static int BACKEND_PORT;
     public static String BACKEND_API_KEY;
@@ -24,6 +25,7 @@ public class Constants {
     public static String BACKEND_CHUNK_POST_URL;
     public static String BACKEND_CHUNK_BATCH_POST_URL;
     public static String BACKEND_PLAYER_POST_URL;
+    public static String BACKEND_SERVER_STATUS_POST_URL;
     public static String BACKEND_DELETE_CHUNKS_URL;
     public static String BACKEND_UPLOAD_TILE_ZIP_URL;
 
@@ -35,6 +37,7 @@ public class Constants {
         DEBUG_MODE = config.yml().getBoolean("debug-mode");
         CHUNK_UPDATE_TICKS = config.yml().getLong("chunk-update-ticks");
         PLAYER_UPDATE_TICKS = config.yml().getLong("player-update-ticks");
+        SERVER_STATUS_UPDATE_TICKS = config.yml().getLong("server-status-update-ticks");
         BACKEND_PORT = config.yml().getInt("backend-port");
         BACKEND_API_KEY = config.yml().getString("backend-api-key");
         BACKEND_CHUNK_BATCH_POST_DELAY_TICKS = config.yml().getInt("backend-chunk-batch-post-delay-ticks");
@@ -42,6 +45,7 @@ public class Constants {
         BACKEND_CHUNK_POST_URL = config.yml().getString("backend-chunk-post-url");
         BACKEND_CHUNK_BATCH_POST_URL = config.yml().getString("backend-chunk-batch-post-url");
         BACKEND_PLAYER_POST_URL = config.yml().getString("backend-player-post-url");
+        BACKEND_SERVER_STATUS_POST_URL = config.yml().getString("backend-server-status-update-url");
         BACKEND_DELETE_CHUNKS_URL = config.yml().getString("backend-delete-chunks-url");
         BACKEND_UPLOAD_TILE_ZIP_URL = config.yml().getString("backend-upload-tile-zip-url");
     }

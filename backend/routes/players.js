@@ -1,25 +1,36 @@
 const express = require("express");
 const router = express.Router();
+const websocket = require("../websocket");
 
 // key = playerName, value = { world, x, z, lastSeen }
 const onlinePlayers = new Map();
 
 router.post('/update', (req, res) => {
-    const {name, world, x, y, z} = req.body;
+    const {"online-players": players} = req.body;
 
-    if (!name || !world || x === undefined || y === undefined || z === undefined) {
-        return res.status(400).send({error: 'Missing required fields'});
+    if (!Array.isArray(players)) {
+        res.status(400).json({ message: "Missing or invalid online-players array" });
     }
 
-    onlinePlayers.set(name, {
-        name,
-        world,
-        x,
-        y,
-        z,
-        lastSeen: Date.now(),
-    });
+    const now = Date.now();
 
+    for (const player of players) {
+        const { name, world, x, y, z, yaw } = player;
+        if (!name || !world || x === undefined || y === undefined || z === undefined || yaw === undefined) {
+            continue;
+        }
+        onlinePlayers.set(name, {
+            name,
+            world,
+            x,
+            y,
+            z,
+            yaw,
+            lastSeen: now,
+        });
+    }
+
+    websocket.getIO().emit("onlinePlayersUpdate", {"online-players": players});
     res.sendStatus(200);
 });
 
@@ -27,8 +38,17 @@ router.get('/', (req, res) => {
     const now = Date.now();
     const ACTIVE_TIMEOUT_MS = 10_000; // remove inactive players after 10 seconds
 
+    const worldFilter = req.query.world;
+
     const activePlayers = Array.from(onlinePlayers.values().filter(
-        p => (now - p.lastSeen) <= ACTIVE_TIMEOUT_MS
+        (p) => {
+            const isActive = (now - p.lastSeen) <= ACTIVE_TIMEOUT_MS;
+            if (worldFilter != null) {
+                const isInWorld = p.world === worldFilter;
+                return isActive && isInWorld;
+            }
+            return isActive;
+        }
     ));
 
     const playersForClient = activePlayers.map(p => ({
@@ -37,6 +57,7 @@ router.get('/', (req, res) => {
         x: p.x,
         y: p.y,
         z: p.z,
+        yaw: p.yaw,
     }));
 
     res.json({"online-players": playersForClient});

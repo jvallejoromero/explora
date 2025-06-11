@@ -26,6 +26,8 @@ chunk-update-ticks: 6000
 # Lower values increase responsiveness but may use more CPU and bandwidth.
 player-update-ticks: 20
 
+server-status-update-ticks: 20
+
 # ============
 # Backend Setup
 # ============
@@ -55,6 +57,8 @@ backend-delete-chunks-url: "http://localhost:%port%/api/admin/clear-chunks"
 # Endpoint for uploading a ZIP file containing rendered PNG tiles and JSON metadata.
 # These files are extracted and stored on the backend to serve the frontend map viewer.
 backend-upload-tile-zip-url: "http://localhost:%port%/api/upload/tile-zip"
+
+backend-server-status-update-url: "http://localhost:%port%/api/status/server/update"
 
 # Delay (in ticks) between sending each batch of chunk data to avoid overloading the backend.
 # Lower values = faster transmission but higher load.

@@ -1,10 +1,11 @@
 import { useMap } from "react-leaflet";
 import { ImageOverlay } from "react-leaflet";
-import React from "react";
 import {useEffect, useState} from "react";
+import React from "react";
 
-const TILE_SIZE = 1024;
+const TILE_SIZE = import.meta.env.VITE_TILE_SIZE;
 const apiKey = import.meta.env.VITE_BACKEND_API_KEY;
+const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
 
 const MemoTile = React.memo(({ world, x, z }: { world: string, x: number; z: number }) => {
     const overlayRef = React.useRef<L.ImageOverlay | null>(null);
@@ -36,7 +37,7 @@ const MemoTile = React.memo(({ world, x, z }: { world: string, x: number; z: num
                 overlayRef.current = ref as L.ImageOverlay;
             }}
             key={`${world}_${x}_${z}`}
-            url={`http://localhost:3000/api/tiles/${world}/0/${x}/${z}.png?apiKey=${apiKey}`}
+            url={baseUrl + `/tiles/${world}/0/${x}/${z}.png?apiKey=${apiKey}`}
             bounds={[
                 [(z + 1) * TILE_SIZE * -1, x * TILE_SIZE],
                 [z * TILE_SIZE * -1, (x + 1) * TILE_SIZE],
@@ -79,7 +80,7 @@ const VisibleTileLoader: React.FC<Props> = ({ world }) => {
                             visibleTiles.push({x, z});
                         }
                     } else {
-                        const res = await fetch(`http://localhost:3000/api/tiles/exists/${world}/0/${x}/${z}.png?apiKey=${apiKey}`);
+                        const res = await fetch(baseUrl + `/tiles/exists/${world}/0/${x}/${z}.png?apiKey=${apiKey}`);
                         const exists = res.ok;
                         tileExistenceCache.set(key, exists);
                         if (exists) {
@@ -105,7 +106,6 @@ const VisibleTileLoader: React.FC<Props> = ({ world }) => {
 
             map.on("moveend", updateVisibleTiles);
             map.on("zoomend", updateVisibleTiles);
-            console.log("map ready!");
         });
 
         return () => {

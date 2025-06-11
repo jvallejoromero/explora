@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -64,7 +65,7 @@ public class HttpUtil {
 				
 				if (targetUrl.contains(buildUrl(Constants.BACKEND_CHUNK_BATCH_POST_URL))) {
 					ExploraPlugin.debug("[HTTP] Sending chunks to " + targetUrl);
-				} else if (!targetUrl.contains(buildUrl(Constants.BACKEND_PLAYER_POST_URL))){
+				} else if (!targetUrl.contains(buildUrl(Constants.BACKEND_PLAYER_POST_URL)) && !targetUrl.contains(buildUrl(Constants.BACKEND_SERVER_STATUS_POST_URL))){
 					ExploraPlugin.debug("[HTTP] Sending to " + targetUrl + ": " + json);
 				}
 				
@@ -270,7 +271,10 @@ public class HttpUtil {
 	    }.runTaskTimer(ExploraPlugin.getInstance(), 0L, delayTicks);
 	}
 
-	
+	/**
+	 * @deprecated Use {@link #sendPlayerPositionUpdates(Set, Runnable)} to batch all players instead.
+	 */
+	@Deprecated
 	public static void sendPlayerPositionUpdate(Player player, Runnable onComplete) {
 		String name = player.getName();
 		String world = player.getWorld().getName();
@@ -289,6 +293,36 @@ public class HttpUtil {
 	    String json = GSON.toJson(jsonMap);
 		String url = buildUrl(Constants.BACKEND_PLAYER_POST_URL);
 		
+		postJson(url, json, onComplete);
+	}
+	
+	public static void sendPlayerPositionUpdates(Set<PlayerStatus> players, Runnable onComplete) {
+
+	    Map<String, Object> jsonMap = new HashMap<>();
+	    jsonMap.put("online-players", players);
+	    
+	    String json = GSON.toJson(jsonMap);
+		String url = buildUrl(Constants.BACKEND_PLAYER_POST_URL);
+		
+		postJson(url, json, onComplete);
+	}
+	
+	
+	public static void sendServerStatusUpdate(Runnable onComplete) {
+		boolean isOnline = true;
+		int playerCount = Bukkit.getOnlinePlayers().size();
+		long worldTime = Bukkit.getWorlds().get(0).getTime();
+		String motd = Bukkit.getServer().getMotd();
+		
+		Map<String, Object> jsonMap = new HashMap<>();
+		
+		jsonMap.put("isOnline", isOnline);
+		jsonMap.put("playerCount", playerCount);
+		jsonMap.put("worldTime", worldTime);
+		jsonMap.put("motd", motd);
+		
+		String json = GSON.toJson(jsonMap);
+		String url = buildUrl(Constants.BACKEND_SERVER_STATUS_POST_URL);
 		postJson(url, json, onComplete);
 	}
 	

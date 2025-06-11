@@ -10,6 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.jvallejoromero.explora.listener.ChunkTracker;
 import com.jvallejoromero.explora.manager.ChunkManager;
 import com.jvallejoromero.explora.tasks.PlayerUpdateTask;
+import com.jvallejoromero.explora.tasks.ServerStatusUpdateTask;
 import com.jvallejoromero.explora.util.ChunkUtils;
 import com.jvallejoromero.explora.util.Constants;
 import com.jvallejoromero.explora.util.FileUtil;
@@ -136,6 +137,7 @@ public class ExploraPlugin extends JavaPlugin {
 		}
 		
 		new PlayerUpdateTask().runTaskTimer(this, Constants.PLAYER_UPDATE_TICKS, Constants.PLAYER_UPDATE_TICKS);
+		new ServerStatusUpdateTask().runTaskTimerAsynchronously(this, Constants.SERVER_STATUS_UPDATE_TICKS, Constants.SERVER_STATUS_UPDATE_TICKS);
 		log("&a" + Constants.PLUGIN_NAME + " v" + this.getDescription().getVersion() + " enabled!");
 	}
 	
