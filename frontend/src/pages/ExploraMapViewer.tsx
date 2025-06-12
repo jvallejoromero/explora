@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import { MapContainer } from 'react-leaflet';
 import L from 'leaflet';
 
-import { COLOR_PRIMARY, COLOR_SECONDARY, DEFAULT_FONT, LOGO_IMAGE } from '../constants'
+import { COLOR_PRIMARY, COLOR_SECONDARY, COLOR_SUBTEXT, DEFAULT_FONT, LOGO_IMAGE } from '../constants'
 import { FaBars, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import "@fontsource/inter/600.css";
 
@@ -12,10 +12,19 @@ import WorldsDropdown from "../components/WorldsDropdown.tsx";
 import MapOverlay from "../components/MapOverlay.tsx";
 import NetherPortalTransition from "../components/NetherPortalTransition.tsx";
 import PlayersOverlay from "../components/PlayersOverlay.tsx";
+import "../css/utility.css"
+import SavedMapView from "../components/SavedMapView.tsx";
 
 const ExploraMapViewer = () => {
-    const { serverStatus, connectedToBackend } = useServerStatus();
-    const [selectedWorld, setSelectedWorld] = useState<string>('world');
+    const savedView = localStorage.getItem(`savedMapView`);
+    let selectedWorldName = "world";
+
+    if (savedView) {
+        selectedWorldName = JSON.parse(savedView).world;
+    }
+
+    const { serverStatus, loadingServerStatus, connectedToBackend } = useServerStatus();
+    const [selectedWorld, setSelectedWorld] = useState<string>(selectedWorldName);
     const [nextWorld, setNextWorld] = useState<string | null>(null);
     const [transitioning, setTransitioning] = useState(false);
 
@@ -34,9 +43,10 @@ const ExploraMapViewer = () => {
 
     const handleTransitionComplete = () => {
         if (nextWorld) {
-            console.log("NEXT WORLD=", nextWorld);
             setSelectedWorld(nextWorld);
             setNextWorld(null);
+        } else {
+            console.log(" NO SELECTED");
         }
         setTransitioning(false);
     }
@@ -48,57 +58,79 @@ const ExploraMapViewer = () => {
                 <div style={styles.headerLeft}>
                     <img src={LOGO_IMAGE} alt="Explora Logo"/>
                     <h1 style={ {color: "white", fontSize: 28, paddingLeft: 10} }>Explora </h1>
+                    <sup style={{color: "white", fontSize: "0.5em", top: "-0.75em", position: "relative", paddingLeft: 2}}>beta</sup>
                 </div>
                 <FaBars size={22} style={{ cursor: "pointer", color: "white" }} />
             </div>
 
             {/* Body Content */}
             <div style={styles.body}>
-                <div style={styles.worldContainer}>
-                    <WorldsDropdown
-                        onSelectWorld={handleWorldSelect}
-                        disabled={!connectedToBackend}
-                    />
-                    <div style={styles.worldStatus}>
-                        {serverStatus?.isOnline ? (
-                            <>
-                                <FaCheckCircle size={18} color="#43ad95" />
-                                <div style={{color: "#43ad95"}}>Online</div>
-                            </>
-                        ) : (
-                            <>
-                                <FaTimesCircle size={18} color="#e25353" />
-                                <div style={{color: "#e25353"}}>Offline</div>
-                            </>
-                        )}
+
+                <div style={styles.controlSection}>
+                    <div style={styles.worldContainer}>
+                        <WorldsDropdown
+                            onSelectWorld={handleWorldSelect}
+                            disabled={!connectedToBackend}
+                        />
+                        <div style={styles.worldStatus}>
+                            {!connectedToBackend || !serverStatus ? (
+                                <div className="spinner" style={{width: 18, height: 18}} />
+                            ) : serverStatus?.isOnline ? (
+                                <>
+                                    <FaCheckCircle size={18} color="#43ad95" />
+                                    <div style={{color: "#43ad95"}}>Online</div>
+                                </>
+                            ) : (
+                                <>
+                                    <FaTimesCircle size={18} color="#e25353" />
+                                    <div style={{color: "#e25353"}}>Offline</div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Leaflet Map */}
-                <div style={styles.mapContainer}>
-                    <MapContainer
-                        crs={L.CRS.Simple}
-                        zoom={0}
-                        center={[0,0]}
-                        minZoom={-6}
-                        maxZoom={2}
-                        style={styles.map}
-                    >
-                        {connectedToBackend ? (
-                            <>
-                                {transitioning && <NetherPortalTransition onComplete={handleTransitionComplete} />}
-                                <MapOverlay />
-                                <VisibleTileLoader key={selectedWorld} world={selectedWorld} />
-                                <PlayersOverlay world={selectedWorld}/>
-                            </>
-                        ) : (
-                            <>
-                                <div style={styles.mapMessageContainer}>
-                                    <div style={styles.errorMsg}>Connection to backend server failed. Is it online?</div>
-                                </div>
-                            </>
-                        )}
-                    </MapContainer>
+                <div style={styles.mapAndToolsSection}>
+                    {/* Leaflet Map */}
+                    <div style={styles.mapContainer}>
+                        <MapContainer
+                            crs={L.CRS.Simple}
+                            zoom={0}
+                            center={[0,0]}
+                            minZoom={-6}
+                            maxZoom={2}
+                            style={styles.map}
+                        >
+                            {(loadingServerStatus && !connectedToBackend) ? (
+                                <>
+                                    <div style={styles.spinnerOverlay}>
+                                        <div className="spinner" style={{width: 32, height: 32}} />
+                                    </div>
+                                </>
+                            ) : connectedToBackend ? (
+                                <>
+                                    {transitioning && <NetherPortalTransition onComplete={handleTransitionComplete} />}
+                                    <MapOverlay />
+                                    <VisibleTileLoader key={selectedWorld} world={selectedWorld} />
+                                    <PlayersOverlay world={selectedWorld}/>
+                                    <SavedMapView world={selectedWorld} />
+                                </>
+                            ) : (
+                                <>
+                                    <div style={styles.mapMessageContainer}>
+                                        <div style={styles.errorMsg}>Connection to backend server failed. Is it online?</div>
+                                    </div>
+                                </>
+                            )}
+                        </MapContainer>
+                    </div>
+                    <div style={styles.toolsContainer}>
+                        {/* Tools & settings UI */}
+                        <div style={styles.toolsHeader}>Tools & Settings</div>
+                        <div style={styles.toolsContent}>
+                            <div style={{color: "white", fontStyle: "italic", fontSize: 12}}>Coming soon..</div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -140,6 +172,7 @@ const styles = {
         justifyContent: "flex-start",
         backgroundColor: COLOR_SECONDARY,
         padding: 25,
+        flexWrap: "wrap",
     } as React.CSSProperties,
     worldContainer: {
         display: "flex",
@@ -162,8 +195,8 @@ const styles = {
     } as React.CSSProperties,
     mapContainer: {
         position: "relative",
-        flex: 1,
-        marginTop: 25,
+        flex: "3 1 500px",
+        minWidth: "300px",
         borderRadius: 10,
         overflow: "hidden",
         boxShadow: "0 0 8px rgba(0,0,0,0.2)",
@@ -186,4 +219,51 @@ const styles = {
         color: "#e25353",
         fontSize: "clamp(12px, 2vw, 24px)",
     },
+    spinnerOverlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0,0,0,0.3)", // optional dimming
+        zIndex: 1000,
+    } as React.CSSProperties,
+    controlSection: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        width: "100%",
+        marginBottom: 20,
+    } as React.CSSProperties,
+    mapAndToolsSection: {
+        display: "flex",
+        flexDirection: "row",
+        flexWrap: "wrap",
+        flex: 1,
+        width: "100%",
+        gap: 10,
+    } as React.CSSProperties,
+    toolsContainer: {
+        display: "flex",
+        flexDirection: "column",
+        flex: "1 1 300px",
+        height: "auto",
+        padding: 16,
+    } as React.CSSProperties,
+    toolsHeader: {
+        color: COLOR_SUBTEXT,
+        fontFamily: DEFAULT_FONT,
+        fontSize: "clamp(20px, 4vw, 25px)",
+        textAlign: "center",
+    } as React.CSSProperties,
+    toolsContent: {
+        display: "flex",
+        flex: 1,
+        textAlign: "center",
+        alignItems: "center",
+        justifyContent: "center",
+    } as React.CSSProperties,
 };

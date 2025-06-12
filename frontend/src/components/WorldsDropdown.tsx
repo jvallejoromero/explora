@@ -19,8 +19,15 @@ const worldNameMap: Record<string, string> = {
 const WorldDropdown: React.FC<WorldDropdownProps> = ({ onSelectWorld, disabled }) => {
   const { connectedToBackend } = useServerStatus();
 
+  const savedView = localStorage.getItem(`savedMapView`);
+  let selectedWorldName = worldNameMap["world"];
+
+  if (savedView) {
+    selectedWorldName = worldNameMap[JSON.parse(savedView).world];
+  }
+
   const [worlds, setWorlds] = useState<string[]>([]);
-  const [selectedWorld, setSelectedWorld] = useState<string>('Overworld');
+  const [selectedWorld, setSelectedWorld] = useState<string>(selectedWorldName);
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);

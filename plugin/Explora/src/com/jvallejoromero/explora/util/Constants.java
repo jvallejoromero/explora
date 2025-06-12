@@ -19,15 +19,20 @@ public class Constants {
     public static long SERVER_STATUS_UPDATE_TICKS;
     
     public static int BACKEND_PORT;
+    
     public static String BACKEND_API_KEY;
+    
     public static int BACKEND_CHUNK_BATCH_POST_DELAY_TICKS;
     public static int BACKEND_CHUNK_BATCH_SIZE;
+    
     public static String BACKEND_CHUNK_POST_URL;
     public static String BACKEND_CHUNK_BATCH_POST_URL;
     public static String BACKEND_PLAYER_POST_URL;
     public static String BACKEND_SERVER_STATUS_POST_URL;
     public static String BACKEND_DELETE_CHUNKS_URL;
     public static String BACKEND_UPLOAD_TILE_ZIP_URL;
+    
+    public static int BLOCKS_CHANGED_PER_CHUNK_THRESHOLD;
 
     public static void init(ExploraPlugin plugin) {
         CustomConfigurationFile config = plugin.getConfiguration();
@@ -48,6 +53,7 @@ public class Constants {
         BACKEND_SERVER_STATUS_POST_URL = config.yml().getString("backend-server-status-update-url");
         BACKEND_DELETE_CHUNKS_URL = config.yml().getString("backend-delete-chunks-url");
         BACKEND_UPLOAD_TILE_ZIP_URL = config.yml().getString("backend-upload-tile-zip-url");
+        BLOCKS_CHANGED_PER_CHUNK_THRESHOLD = config.yml().getInt("blocks-changed-per-chunk-threshold");
     }
     
 }

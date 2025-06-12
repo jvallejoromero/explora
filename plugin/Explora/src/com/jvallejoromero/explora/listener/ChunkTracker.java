@@ -1,13 +1,25 @@
 package com.jvallejoromero.explora.listener;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 import com.jvallejoromero.explora.ExploraPlugin;
 import com.jvallejoromero.explora.manager.ChunkManager;
+import com.jvallejoromero.explora.util.BlockCoord;
+import com.jvallejoromero.explora.util.ChunkCoord;
+import com.jvallejoromero.explora.util.Constants;
 import com.jvallejoromero.explora.util.StringUtils;
 
 import net.md_5.bungee.api.ChatMessageType;
@@ -15,6 +27,8 @@ import net.md_5.bungee.api.chat.TextComponent;
 
 public class ChunkTracker implements Listener {
 
+	private static Map<ChunkCoord, Set<BlockCoord>> changedBlocks = new HashMap<>();
+	
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent event) {
 		Player player = event.getPlayer();
@@ -34,19 +48,78 @@ public class ChunkTracker implements Listener {
 		int chunkZ = chunk.getZ();
 		
 		boolean explored = chunkManager.isChunkExplored(player.getWorld().getName(), chunkX, chunkZ);
-		sendActionBarMessage(player, "Chunk (X:" + chunkX + " Z:" + chunkZ + ") Explored: " + explored);
 		
 		if (!explored) {
 		    chunkManager.recordChunkIfNew(player.getWorld().getName(), chunkX, chunkZ);
-
-		    if (ExploraPlugin.hasLoadedChunks()) {
-		        player.sendMessage(StringUtils.colorize("&aYou explored a new chunk!"));
-		    }
 		}
 	}
 	
+	@EventHandler
+	public void onBlockPlace(BlockPlaceEvent event) {
+		Block placed = event.getBlock();
+		
+		if (!isNearTop(placed)) return;
+		
+		int blockX = placed.getLocation().getBlockX();
+		int blockY = placed.getLocation().getBlockY();
+		int blockZ = placed.getLocation().getBlockZ();
+		
+		BlockCoord blockCoord = new BlockCoord(blockX, blockY, blockZ);
+		ChunkCoord chunkCoord = blockCoord.toChunkCoord();
+		
+		Set<BlockCoord> blocksChangedInChunk = changedBlocks.computeIfAbsent(chunkCoord, key -> new HashSet<>());
+		if (blocksChangedInChunk.size() >= Constants.BLOCKS_CHANGED_PER_CHUNK_THRESHOLD) {
+			// trigger re-render
+			String world = placed.getLocation().getWorld().getName();
+			ExploraPlugin.getInstance().getChunkManager().getNewlyExploredChunks().computeIfAbsent(world, key -> new HashSet<>()).add(chunkCoord);
+			blocksChangedInChunk.clear();
+			return;
+		}
+		
+		blocksChangedInChunk.add(blockCoord);
+	}
+	
+	@EventHandler
+	public void onBlockBreak(BlockBreakEvent event) {
+		Block broken = event.getBlock();
+
+		if (!isNearTop(broken)) return;
+		
+		int blockX = broken.getLocation().getBlockX();
+		int blockY = broken.getLocation().getBlockY();
+		int blockZ = broken.getLocation().getBlockZ();
+		
+		BlockCoord blockCoord = new BlockCoord(blockX, blockY, blockZ);
+		ChunkCoord chunkCoord = blockCoord.toChunkCoord();
+		
+		Set<BlockCoord> blocksChangedInChunk = changedBlocks.computeIfAbsent(chunkCoord, key -> new HashSet<>());
+		if (blocksChangedInChunk.size() >= Constants.BLOCKS_CHANGED_PER_CHUNK_THRESHOLD) {
+			// trigger re-render
+			String world = broken.getLocation().getWorld().getName();
+			ExploraPlugin.getInstance().getChunkManager().getNewlyExploredChunks().computeIfAbsent(world, key -> new HashSet<>()).add(chunkCoord);
+			blocksChangedInChunk.clear();
+			return;
+		}
+		
+		if (blocksChangedInChunk.contains(blockCoord)) {
+			blocksChangedInChunk.remove(blockCoord);
+			return;
+		}
+		
+		blocksChangedInChunk.add(blockCoord);
+	}
+	
+	private boolean isNearTop(Block block) {
+		Location loc = block.getLocation();
+		
+		int blockY = loc.getBlockY();
+		int highestY = loc.getWorld().getHighestBlockYAt(loc);
+		
+		return ((blockY >= highestY) || (blockY - highestY >= -1));
+	}
+	
     private void sendActionBarMessage(Player player, String message) {
-   	 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(StringUtils.colorize(message)));
-   }
+    	player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(StringUtils.colorize(message)));
+    }
 	
 }

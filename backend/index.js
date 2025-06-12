@@ -38,6 +38,6 @@ io.on('connection', (socket) => {
     console.log('Client connected');
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Explora backend running on port ${PORT}`);
 })

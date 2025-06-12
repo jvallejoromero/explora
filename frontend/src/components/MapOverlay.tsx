@@ -10,7 +10,7 @@ const MapOverlay = () => {
     const minecraftCoords = mouseCoords ? pixelsToMinecraftCoords(mouseCoords?.x, mouseCoords?.z) : null;
 
     return (
-        <div style={styles.container}>
+        <div style={{...styles.container, display: minecraftCoords || serverStatus?.isOnline ? 'block' : 'none'}}>
             {minecraftCoords && (
                 <div>X: {minecraftCoords.x}, Z: {minecraftCoords.z}</div>
             )}

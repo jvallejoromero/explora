@@ -22,6 +22,7 @@ export function useServerStatus() {
     const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
     const [onlinePlayers, setOnlinePlayers] = useState<PlayerStatus[]>([]);
     const [connectedToBackend, setConnectedToBackend] = useState(false);
+    const [loadingServerStatus, setLoadingServerStatus] = useState(true);
 
     useEffect(() => {
         if (!socket.connected) {
@@ -40,6 +41,7 @@ export function useServerStatus() {
 
         const handleServerUpdate = (data: ServerStatus) => {
             setServerStatus(data);
+            setLoadingServerStatus(false);
         }
 
         const handlePlayersUpdate = (data: {"online-players": PlayerStatus[]}) => {
@@ -48,7 +50,10 @@ export function useServerStatus() {
 
         socket.on('connect', handleConnect);
         socket.on('disconnect', handleDisconnect);
-        socket.on('connect_error', (err) => console.error('❌ connect_error:', err));
+        socket.on('connect_error', (err) => {
+            console.error('❌ connect_error:', err);
+            setLoadingServerStatus(false);
+        });
         socket.on('serverStatusUpdate', handleServerUpdate);
         socket.on('onlinePlayersUpdate', handlePlayersUpdate);
 
@@ -60,5 +65,5 @@ export function useServerStatus() {
         }
     }, []);
 
-    return {serverStatus, onlinePlayers, connectedToBackend};
+    return {serverStatus, onlinePlayers, connectedToBackend, loadingServerStatus};
 }

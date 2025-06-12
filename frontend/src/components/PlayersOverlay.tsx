@@ -8,40 +8,48 @@ type PlayersOverlayProps = {
     world: string,
 }
 
+
 const createPlayerIcon = (name: string, yaw: number, zoom: number) => {
     const maxZoom = 2;
     const minZoom = -6;
     const normalizedZoom = (zoom - minZoom) / (maxZoom - minZoom);
-    const scale = 0.5 + normalizedZoom * 1.0;
+    const scale = 0.25 + normalizedZoom;
     const size = 24 * scale;
+
+    const svgHtml = (zoom > -3) ? `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24"
+            style="
+                position: absolute;
+                top: -14px;
+                left: 0;
+                right: 0;
+                margin: auto;
+                transform: rotate(${yaw - 180}deg);
+                fill: #ff3c3c;
+                opacity: 0.9;
+                z-index: 2;
+                transition: transform 0.25s ease-out;
+                pointer-events: none;
+            ">
+            <polygon points="12,-4 4,20 20,20" />
+        </svg>
+        ` : '';
 
     return new L.DivIcon({
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
+        className: "",
         html: `
-        <div style="position: relative;">
+        <div style="position: relative; pointer-events: auto">
             <img 
-                src="https://mc-heads.net/avatar/${name}/${size}/nohelm.png" 
+                src="https://mc-heads.net/avatar/${name}/${size}.png" 
                 style="
                     border-radius: 4px;
                     box-shadow: 0 0 3px rgba(0,0,0,0.5);
+                    pointer-events: auto;
                 "
             />
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
-                style="
-                    position: absolute;
-                    top: -14px;
-                    left: 0;
-                    right: 0;
-                    margin: auto;
-                    transform: rotate(${yaw - 180}deg);
-                    fill: #ff3c3c;
-                    opacity: 0.9;
-                    z-index: 2;
-                    transition: transform 0.25s ease-out;
-                ">
-                <polygon points="12,-4 4,20 20,20" />
-            </svg>
+            ${svgHtml}
         </div>
     `,
     });
@@ -77,7 +85,7 @@ const PlayersOverlay = ({ world }: PlayersOverlayProps) => {
     return (
         <>
             {players.map((player) => {
-                // if (zoom < -3) return null;
+                if (zoom <= -6) return null;
                 const {x, z} = minecraftCoordsToPixels(player.x, player.z);
 
                 return (
@@ -85,6 +93,7 @@ const PlayersOverlay = ({ world }: PlayersOverlayProps) => {
                         key={player.name}
                         position={[z,x]}
                         icon={createPlayerIcon(player.name, player.yaw, zoom)}
+                        interactive={true}
                     >
                         <Popup>
                             <div>

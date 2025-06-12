@@ -51,13 +51,14 @@ backend-player-post-url: "http://localhost:%port%/api/players/update"
 
 # Endpoint to clear all chunk data from the backend database.
 # WARNING: This will delete all stored chunk data.
-# The `secret` query param is used for basic protection.
 backend-delete-chunks-url: "http://localhost:%port%/api/admin/clear-chunks"
 
 # Endpoint for uploading a ZIP file containing rendered PNG tiles and JSON metadata.
 # These files are extracted and stored on the backend to serve the frontend map viewer.
 backend-upload-tile-zip-url: "http://localhost:%port%/api/upload/tile-zip"
 
+# Endpoint used to send server status data (online status, world time, MOTD, etc.)
+# to the backend for real-time frontend display.
 backend-server-status-update-url: "http://localhost:%port%/api/status/server/update"
 
 # Delay (in ticks) between sending each batch of chunk data to avoid overloading the backend.
@@ -66,6 +67,10 @@ backend-chunk-batch-post-delay-ticks: 5
 
 # Number of chunks to include in each batch sent to the backend.
 backend-chunk-batch-size: 1000
+
+# Number of block changes (placed/broken) within a chunk required before it triggers a re-render.
+# This helps reduce noise from minor edits and only updates significantly modified chunks.
+blocks-changed-per-chunk-threshold: 30
 
 # Enables verbose logging for debugging HTTP requests and chunk processing.
 debug-mode: true

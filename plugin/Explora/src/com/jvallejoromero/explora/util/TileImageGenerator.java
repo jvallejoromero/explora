@@ -235,7 +235,6 @@ public class TileImageGenerator {
                     File outputJson = new File(outputDir, fileBaseName + ".json");
                     
                     if (!outputPng.exists() || !outputJson.exists()) {
-                        ExploraPlugin.debug("Missing png or json for region: " + fileBaseName);
                         Set<RegionCoord> regionSet = regions.computeIfAbsent(entry.getKey().toLowerCase(), k -> new HashSet<>());
                     	RegionCoord coord = RegionCoord.fromRegionCoords(regionX, regionZ);
                         regionSet.add(coord);
@@ -377,6 +376,10 @@ public class TileImageGenerator {
                             } catch (Exception e) {
                                 ExploraPlugin.warn("Error rendering region: " + mcaFile.getName());
                                 e.printStackTrace();
+                            } finally {
+                                try {
+                                    Thread.sleep(10); 
+                                } catch (InterruptedException ignored) {}
                             }
                         });
                     }
