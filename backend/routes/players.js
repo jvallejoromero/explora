@@ -40,16 +40,15 @@ router.get('/', (req, res) => {
 
     const worldFilter = req.query.world;
 
-    const activePlayers = Array.from(onlinePlayers.values().filter(
+    const activePlayers = Array.from(onlinePlayers.values()).filter(
         (p) => {
             const isActive = (now - p.lastSeen) <= ACTIVE_TIMEOUT_MS;
             if (worldFilter != null) {
-                const isInWorld = p.world === worldFilter;
-                return isActive && isInWorld;
+                return isActive && p.world === worldFilter;
             }
             return isActive;
         }
-    ));
+    );
 
     const playersForClient = activePlayers.map(p => ({
         name: p.name,

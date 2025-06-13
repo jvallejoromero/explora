@@ -11,8 +11,8 @@ router.get("/available-worlds", (req, res) => {
     res.json({ worlds });
 });
 
-router.get("/exists/:world/:zoom/:x/:z", async (req, res) => {
-    const { world, zoom, x, z } = req.params;
+router.get("/exists/:world/:zoom/:x/:z.:extension", async (req, res) => {
+    const { world, zoom, x, z, extension } = req.params;
     const zoomNum = parseInt(zoom);
     const xNum = parseInt(x);
     const zNum = parseInt(z);
@@ -21,9 +21,15 @@ router.get("/exists/:world/:zoom/:x/:z", async (req, res) => {
         return res.status(400).send("Invalid zoom or coordinates");
     }
 
-    const filename = `r.${x}.${z}`;
+    if (extension !== "png" && extension !== "json") {
+        return res.status(400).send("Unsupported file type");
+    }
+
+    const filename = `r.${x}.${z}.${extension}`;
     const zoomFolder = zoomNum > 0 ? `zoom${zoomNum}` : "";
     const imagePath = path.join(__dirname, "..", "tiles", world, zoomFolder, filename);
+
+    res.setHeader("Cache-Control", "no-store");
 
     if (fs.existsSync(imagePath)) {
         return res.status(200).json({ exists: true });
@@ -61,7 +67,9 @@ router.get("/:world/:zoom/:x/:z.:extension", async (req, res) => {
         const eTag = `"${stats.mtimeMs}"`;
 
         res.setHeader("ETag", eTag);
-        res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+        res.setHeader("Last-Modified", stats.mtime.toUTCString());
+        res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
+        res.setHeader("Pragma", "no-cache");
 
         if (req.headers["if-none-match"] === eTag) {
             console.log(`304 Not Modified: ${filePathToSend}`);
