@@ -16,6 +16,12 @@ export function minecraftCoordsToPixels(minecraftX: number, minecraftZ: number) 
     return { x: pixelX, z: pixelZ };
 }
 
+export function minecraftCoordsToRegionCoords(x: number, z: number): {x: number, z: number} {
+    const regionX = Math.floor(x / 512);
+    const regionZ = Math.floor(z / 512);
+    return {x: regionX, z: regionZ}
+}
+
 export function formatMinecraftTime(ticks: number): string {
     // Offset by 6000 ticks because 0 ticks = 6 AM
     const totalMinutes = Math.floor((ticks + 6000) % 24000 * 1440 / 24000);

@@ -19,9 +19,7 @@ const MemoTile = React.memo(({ world, x, z, versionParam }: { world: string, x: 
         const overlay = overlayRef.current;
         if (!overlay) return;
 
-        const leafletOverlay = overlay as unknown as { _image: HTMLImageElement };
-        const img = leafletOverlay._image;
-
+        const img = overlay.getElement();
         if (!img) return;
 
         // Start invisible

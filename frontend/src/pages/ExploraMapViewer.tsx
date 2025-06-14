@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import { MapContainer } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -14,6 +14,9 @@ import NetherPortalTransition from "../components/NetherPortalTransition.tsx";
 import PlayersOverlay from "../components/PlayersOverlay.tsx";
 import "../css/utility.css"
 import SavedMapView from "../components/SavedMapView.tsx";
+import ServerInformation from "../components/ServerInformation.tsx";
+import PlayerSearchBar from "../components/PlayerSearchBar.tsx";
+import MinecraftCoordinatesSearchBar from "../components/MinecraftCoordinatesSearchBar.tsx";
 
 const ExploraMapViewer = () => {
     const savedView = localStorage.getItem(`savedMapView`);
@@ -27,6 +30,8 @@ const ExploraMapViewer = () => {
     const [selectedWorld, setSelectedWorld] = useState<string>(selectedWorldName);
     const [nextWorld, setNextWorld] = useState<string | null>(null);
     const [transitioning, setTransitioning] = useState(false);
+
+    const mapRef = useRef<L.Map | null>(null);
 
     const handleWorldSelect = (world: string) => {
         if (world.toLowerCase() === "overworld") {
@@ -100,6 +105,9 @@ const ExploraMapViewer = () => {
                             minZoom={-6}
                             maxZoom={2}
                             style={styles.map}
+                            ref={(mapInstance) => {
+                                if (mapInstance) {mapRef.current = mapInstance;}
+                            }}
                         >
                             {(loadingServerStatus && !connectedToBackend) ? (
                                 <>
@@ -124,11 +132,14 @@ const ExploraMapViewer = () => {
                             )}
                         </MapContainer>
                     </div>
+
+                    {/* Tools & settings UI */}
                     <div style={styles.toolsContainer}>
-                        {/* Tools & settings UI */}
                         <div style={styles.toolsHeader}>Tools & Settings</div>
                         <div style={styles.toolsContent}>
-                            <div style={{color: "white", fontStyle: "italic", fontSize: 12}}>Coming soon..</div>
+                            <ServerInformation world={selectedWorld}/>
+                            <PlayerSearchBar map={mapRef.current ?? undefined}/>
+                            <MinecraftCoordinatesSearchBar world={selectedWorld} map={mapRef.current ?? undefined} />
                         </div>
                     </div>
                 </div>
@@ -228,7 +239,7 @@ const styles = {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(0,0,0,0.3)", // optional dimming
+        backgroundColor: "rgba(0,0,0,0.3)",
         zIndex: 1000,
     } as React.CSSProperties,
     controlSection: {
@@ -252,18 +263,21 @@ const styles = {
         flex: "1 1 300px",
         height: "auto",
         padding: 16,
+        alignItems: "center",
     } as React.CSSProperties,
     toolsHeader: {
         color: COLOR_SUBTEXT,
         fontFamily: DEFAULT_FONT,
         fontSize: "clamp(20px, 4vw, 25px)",
         textAlign: "center",
+        width: "100%",
     } as React.CSSProperties,
     toolsContent: {
+        margin: 10,
         display: "flex",
         flex: 1,
-        textAlign: "center",
-        alignItems: "center",
-        justifyContent: "center",
+        flexDirection: "column",
+        justifyContent: "flex-start",
+        gap: 12,
     } as React.CSSProperties,
 };
