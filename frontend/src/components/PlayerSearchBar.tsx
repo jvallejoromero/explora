@@ -1,10 +1,11 @@
 import {FaSearch} from "react-icons/fa";
 import {DEFAULT_FONT} from "../constants.ts";
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import L from "leaflet";
-import {type PlayerStatus, useServerStatus} from "../hooks/ServerStatus.ts";
 import {minecraftCoordsToPixels} from "../utils/MinecraftUtils.ts";
 import "../css/player-search-bar.css";
+import PopupMessage from "./PopupMessage.tsx";
+import {useServerStatus} from "../hooks/ServerStatus.ts";
 
 type PlayerSearchBarProps = {
     placeholder?: string;
@@ -14,51 +15,80 @@ type PlayerSearchBarProps = {
 const PlayerSearchBar = ( { placeholder="Search for a player..", map }: PlayerSearchBarProps) => {
     const { onlinePlayers } = useServerStatus();
     const [query, setQuery] = useState("");
-    const [lastSearch, setLastSearch] = useState<PlayerStatus | string>("");
-    const [notFound, setNotFound] = useState(false);
+
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestionsIndex, setSuggestionsIndex] = useState(0);
+
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [popupId, setPopupId] = useState(0);
+
+    const trimString = (input: string): string => {
+        const maxNameLength = 16;
+        const ellipsis = "..";
+        const shouldTruncate = input.length > maxNameLength;
+        const trimmedName = shouldTruncate
+            ? query.slice(0, maxNameLength - ellipsis.length) + ellipsis
+            : query;
+
+        return trimmedName;
+    }
+
+    const setError = (error: string) => {
+        setErrorMessage(error);
+        setPopupId(prev => prev + 1);
+    }
 
     const onSubmit = () => {
         if (!map) return;
 
-        console.log("Searching for player", query);
+        if (query.trim().length === 0) {
+            setError("Please enter a username!");
+            return;
+        }
+
         const foundPlayer = onlinePlayers.find((player) => player.name === query);
 
         if (foundPlayer) {
             const { x, z } = minecraftCoordsToPixels(foundPlayer!.x, foundPlayer!.z);
             map.setView([z, x], 0);
-            setLastSearch(foundPlayer);
         } else {
-            const maxNameLength = 16;
-            const ellipsis = "..";
-            const shouldTruncate = query.length > maxNameLength;
-            const trimmedName = shouldTruncate
-                ? query.slice(0, maxNameLength - ellipsis.length) + ellipsis
-                : query;
-
-            setNotFound(true);
-            setLastSearch(trimmedName);
+            const trimmedName = trimString(query);
+            setError(`Player ${trimmedName} is not online!`);
         }
     }
 
-    useEffect(() => {
-        if (notFound) {
-            const timer = setTimeout(() => setNotFound(false), 1500);
-            return () => clearTimeout(timer);
+    const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const input = e.target.value;
+        setQuery(input);
+
+        const playerMatches = onlinePlayers.filter((player) => player.name.startsWith(input)).map((player) => player.name);
+        setSuggestions(playerMatches);
+    }
+
+    const handleTabPress = () => {
+        if (suggestions.length === 0) {
+            const trimmedInput = trimString(query);
+            setError(`No suggestions found for: ${trimmedInput}`);
+            return;
         }
-    }, [notFound]);
+        const next = (suggestionsIndex + 1) % suggestions.length;
+        setSuggestionsIndex(next);
+        setQuery(suggestions[next]);
+     }
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            onSubmit();
+        } else if (e.key === "Tab") {
+            e.preventDefault();
+            handleTabPress();
+        }
+    }
 
     return (
         <div style={styles.wrapper}>
-            {notFound && (
-                <div style={styles.popupBox}>
-                    <div>
-                        {typeof lastSearch === "string"
-                            ?  lastSearch.trim().length === 0
-                                ? `Please enter a username!`
-                                : `Player ${lastSearch} is not online!`
-                            :  `Player not online!`}
-                    </div>
-                </div>
+            {errorMessage && (
+                <PopupMessage key={popupId} message={errorMessage} offsetTop={-40} />
             )}
             <div style={styles.container}>
                 <FaSearch style={styles.icon}/>
@@ -66,8 +96,8 @@ const PlayerSearchBar = ( { placeholder="Search for a player..", map }: PlayerSe
                     type={"text"}
                     value={query}
                     placeholder={placeholder}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && onSubmit?.()}
+                    onChange={handleInput}
+                    onKeyDown={handleKeyDown}
                     style={styles.input}
                 />
                 <button style={styles.button} onClick={onSubmit}>Find</button>

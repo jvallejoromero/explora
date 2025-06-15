@@ -1,5 +1,5 @@
 import L from "leaflet";
-import React, {type ChangeEvent, useState} from "react";
+import React, {type ChangeEvent, useEffect, useRef, useState} from "react";
 import {DEFAULT_FONT} from "../constants.ts";
 import PopupMessage from "./PopupMessage.tsx";
 import {minecraftCoordsToPixels, minecraftCoordsToRegionCoords} from "../utils/MinecraftUtils.ts";
@@ -13,10 +13,32 @@ type MinecraftCoordinatesSearchBarProps = {
 };
 
 const MinecraftCoordinatesSearchBar = ({world, map }: MinecraftCoordinatesSearchBarProps) => {
-    const [coordX, setCoordX] = useState<number>(0);
-    const [coordZ, setCoordZ] = useState<number>(0);
+    const [coordX, setCoordX] = useState<string>("");
+    const [coordZ, setCoordZ] = useState<string>("");
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [popupId, setPopupId] = useState(0);
+
+    const markerRef = useRef<L.Marker | null>(null);
+
+    const redIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [20, 35],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [37, 37]
+    });
+
+    useEffect(() => {
+        if (!map) {
+            return;
+        }
+        if (markerRef.current) {
+            markerRef.current.removeFrom(map);
+            markerRef.current = null;
+        }
+        markerRef.current = L.marker([0,0], {icon: redIcon});
+    }, [map, world]);
 
     const setError = (error: string) => {
         setErrorMessage(error);
@@ -25,20 +47,12 @@ const MinecraftCoordinatesSearchBar = ({world, map }: MinecraftCoordinatesSearch
 
     const handleXCoordChange = (e: ChangeEvent<HTMLInputElement>) => {
         const input = e.target?.value;
-        const parsedInput = Number(input);
-        if (isNaN(parsedInput)) {
-            return;
-        }
-        setCoordX(parsedInput);
+        setCoordX(input);
     }
 
     const handleZCoordChange = (e: ChangeEvent<HTMLInputElement>) => {
         const input = e.target?.value;
-        const parsedInput = Number(input);
-        if (isNaN(parsedInput)) {
-            return;
-        }
-        setCoordZ(parsedInput);
+        setCoordZ(input);
     }
 
     const handleButtonClick = async() => {
@@ -46,14 +60,22 @@ const MinecraftCoordinatesSearchBar = ({world, map }: MinecraftCoordinatesSearch
             return;
         }
 
-        if (!coordX || !coordZ) {
+        const missingCoordinates = coordX.trim().length === 0 || coordZ.trim().length == 0;
+        if (missingCoordinates) {
             setError("Please enter both coordinates!");
-            console.log("coords not set");
             return;
         }
-        const {x, z} = minecraftCoordsToRegionCoords(coordX, coordZ);
+
+        const parsedX = Number(coordX);
+        const parsedZ = Number(coordZ);
+        const invalidNumber = isNaN(parsedX) || isNaN(parsedZ);
+        if (invalidNumber) {
+            setError("Coordinates must be numbers!");
+            return;
+        }
+
+        const {x, z} = minecraftCoordsToRegionCoords(parsedX, parsedZ);
         const url=`${baseUrl}/tiles/exists/${world}/0/${x}/${z}.png?apiKey=${apiKey}`;
-        console.log("Checking tile:", url);
         try {
             const res = await fetch(url);
             const data = await res.json();
@@ -62,8 +84,16 @@ const MinecraftCoordinatesSearchBar = ({world, map }: MinecraftCoordinatesSearch
                 return;
             }
 
-            const {x: pixelX, z: pixelZ} = minecraftCoordsToPixels(coordX, coordZ);
+            // coordinates are valid
+            const {x: pixelX, z: pixelZ} = minecraftCoordsToPixels(parsedX, parsedZ);
             map.setView([pixelZ, pixelX], 0);
+            if (markerRef.current) {
+                const marker = markerRef.current;
+                marker.addTo(map);
+                marker.setLatLng([pixelZ, pixelX]);
+                marker.bindPopup(`X:${coordX}, Z:${coordZ}`);
+                marker.openPopup();
+            }
         } catch (err) {
             console.error("Could not verify coordinates", err);
         }
@@ -71,13 +101,14 @@ const MinecraftCoordinatesSearchBar = ({world, map }: MinecraftCoordinatesSearch
 
     return (
         <div style={styles.container}>
-            <div style={{color: 'white', textAlign: 'center', fontSize: 13}}>Or go to coordinates</div>
+            <div style={{color: "white", textAlign: "center", fontSize: 13}}>Or go to coordinates</div>
             <div style={styles.inputContainer}>
                 <input
                     type={"text"}
                     placeholder={"X"}
                     value={coordX}
                     onChange={handleXCoordChange}
+                    onKeyDown={(e) => e.key === "Enter" && handleButtonClick()}
                     style={styles.input}
                 />
                 <input
@@ -85,6 +116,7 @@ const MinecraftCoordinatesSearchBar = ({world, map }: MinecraftCoordinatesSearch
                     value={coordZ}
                     placeholder={"Z"}
                     onChange={handleZCoordChange}
+                    onKeyDown={(e) => e.key === "Enter" && handleButtonClick()}
                     style={styles.input}
                 />
                 <button style={styles.button} onClick={handleButtonClick}>Go</button>

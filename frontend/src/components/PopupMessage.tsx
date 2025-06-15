@@ -5,9 +5,10 @@ import "../css/player-search-bar.css"
 type PopupMessageProps = {
     message: string,
     timeout?: number,
+    offsetTop?: number,
 }
 
-const PopupMessage = ({ timeout=1500, message }: PopupMessageProps) => {
+const PopupMessage = ({ timeout=1500, offsetTop=-5, message }: PopupMessageProps) => {
     const [active, setActive] = useState(true);
 
     useEffect(() => {
@@ -18,7 +19,7 @@ const PopupMessage = ({ timeout=1500, message }: PopupMessageProps) => {
     return (
         <div>
             {active && (
-                <div style={styles.popupBox}>{message}</div>
+                <div style={{...styles.popupBox, top: offsetTop}}>{message}</div>
             )}
         </div>
     )
@@ -29,7 +30,6 @@ export default PopupMessage
 const styles = {
     popupBox: {
         position: "absolute",
-        top: "-10px",
         left: 0,
         backgroundColor: "#2a2a2a",
         color: "white",
