@@ -138,7 +138,7 @@ const ExploraMapViewer = () => {
                         <div style={styles.toolsHeader}>Tools & Settings</div>
                         <div style={styles.toolsContent}>
                             <ServerInformation world={selectedWorld}/>
-                            <PlayerSearchBar map={mapRef.current ?? undefined}/>
+                            <PlayerSearchBar map={mapRef.current ?? undefined} world={selectedWorld}/>
                             <MinecraftCoordinatesSearchBar world={selectedWorld} map={mapRef.current ?? undefined} />
                         </div>
                     </div>

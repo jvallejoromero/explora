@@ -38,7 +38,6 @@ const styles = {
         boxShadow: "0 0 6px rgba(0,0,0,0.4)",
         fontFamily: DEFAULT_FONT,
         fontSize: 13,
-        whiteSpace: "nowrap",
         zIndex: 10,
         animation: "fadeInPopup 0.2s ease-in-out",
         transition: "opacity 0.3s ease-in-out",

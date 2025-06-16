@@ -10,9 +10,10 @@ import {useServerStatus} from "../hooks/ServerStatus.ts";
 type PlayerSearchBarProps = {
     placeholder?: string;
     map?: L.Map;
+    world: string,
 };
 
-const PlayerSearchBar = ( { placeholder="Search for a player..", map }: PlayerSearchBarProps) => {
+const PlayerSearchBar = ( { placeholder="Search for a player..", map, world }: PlayerSearchBarProps) => {
     const { onlinePlayers } = useServerStatus();
     const [query, setQuery] = useState("");
 
@@ -49,6 +50,11 @@ const PlayerSearchBar = ( { placeholder="Search for a player..", map }: PlayerSe
         const foundPlayer = onlinePlayers.find((player) => player.name.toLowerCase() === query.toLowerCase());
 
         if (foundPlayer) {
+            if (foundPlayer.world !== world) {
+                setError(`Player ${foundPlayer.name} is in "${foundPlayer.world}", but you're viewing "${world}".`);
+                return;
+            }
+
             const { x, z } = minecraftCoordsToPixels(foundPlayer!.x, foundPlayer!.z);
             map.setView([z, x], 0);
         } else {
