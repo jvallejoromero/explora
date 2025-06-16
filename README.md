@@ -80,4 +80,4 @@ This project is licensed under the [MIT License](LICENSE).
 ## 🙌 Contributing
 
 Found a bug? Have an idea?  
-Feel free to [open an issue](https://github.com/your-username/explora/issues) or submit a pull request.
+Feel free to [open an issue](https://github.com/jvallejoromero/explora/issues) or submit a pull request.
