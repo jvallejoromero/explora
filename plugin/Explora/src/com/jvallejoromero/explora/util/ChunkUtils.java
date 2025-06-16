@@ -29,6 +29,19 @@ import net.querz.mcaselector.io.mca.RegionChunk;
 import net.querz.mcaselector.io.mca.RegionMCAFile;
 import net.querz.mcaselector.util.point.Point2i;
 
+/**
+ * Utility class for scanning Minecraft region files, extracting explored chunk data,
+ * and exporting that data to JSON for use by the {@code Explora} plugin.
+ *
+ * <p>Also provides helpers for:
+ * <ul>
+ *   <li>Detecting dimension folders and region directories</li>
+ *   <li>Rendering and scaling images from chunk data</li>
+ *   <li>Serializing explored chunks in {@link ChunkCoord} format</li>
+ * </ul>
+ *
+ * <p>Most operations are designed to run asynchronously to avoid blocking the main server thread.
+ */
 public class ChunkUtils {
 
 	private static final Gson gson = new GsonBuilder().create();	
@@ -76,7 +89,7 @@ public class ChunkUtils {
 	 * Scans the given world folder and finds all "region" directories within it.
 	 *
 	 * @param worldFolder The root world folder to scan (e.g., "world", "world_nether").
-	 * @return A map where the key is the readable dimension name (e.g., "overworld", "nether") 
+	 * @return A map where the key is the wolrd name (e.g., "world", "world_nether") 
 	 *         and the value is the corresponding region folder.
 	 */
 	public static Map<String, File> getAllRegionFolders(File worldFolder) {
@@ -134,11 +147,12 @@ public class ChunkUtils {
 	}
 	
 	/**
-	 * Returns a set of strings representing the explored chunks in ChunkCoord format
-	 * from the provided region directory.
+	 * Extracts explored chunk coordinates from all valid `.mca` region files in the given directory.
 	 *
-	 * @param regionDir The region folder containing .mca files to scan.
-	 * @return A set of explored chunk coordinates as ChunkCoord objects
+	 * <p>A chunk is considered explored if it is present and not marked as empty in the region file.
+	 *
+	 * @param regionDir the directory containing `.mca` files
+	 * @return a set of explored {@link ChunkCoord} entries
 	 */
 	public static Set<ChunkCoord> getExploredChunksFromRegionFolder(File regionDir) {
 	    Set<ChunkCoord> exploredChunks = new HashSet<>();
@@ -208,6 +222,13 @@ public class ChunkUtils {
 		}
 	}
 	
+	/**
+	 * Scales the given {@link BufferedImage} using nearest-neighbor interpolation to preserve pixel accuracy.
+	 *
+	 * @param original the original image to scale
+	 * @param zoomFactor how many times to upscale the image (e.g., {@code 2} doubles its size)
+	 * @return a new scaled {@link BufferedImage}
+	 */
 	public static BufferedImage scaleImage(BufferedImage original, int zoomFactor) {
 		int width = original.getWidth() * zoomFactor;
 		int height = original.getHeight() * zoomFactor;

@@ -21,6 +21,25 @@ import net.querz.mcaselector.tile.Tile;
 import net.querz.mcaselector.ui.Color;
 import net.querz.mcaselector.util.math.MathUtil;
 
+/**
+ * A headless, tile image generator for Minecraft region files (MCA),
+ * adapted from the <a href="https://github.com/Querz/mcaselector">MCA Selector</a> project (MIT License).
+ * <p>
+ * This class produces {@link BufferedImage}s from {@link RegionMCAFile} data entirely in memory,
+ * without any GUI dependencies. It is optimized for server-side use in the {@code Explora} plugin
+ * and supports Minecraft 1.21.5 (data version 4325).
+ *
+ * <p><strong>Modifications from the original {@code TileImage}:</strong>
+ * <ul>
+ *   <li>Converted to a fully headless implementation (no UI or GUI dependencies)</li>
+ *   <li>Integrated error handling and logging via {@link ExploraPlugin}</li>
+ *   <li>Renamed from {@code TileImage} to {@code HeadlessTileImage} for clarity</li>
+ * </ul>
+ *
+ * <p><strong>Original Author:</strong> Querz (<a href="https://github.com/Querz/mcaselector">github.com/Querz/mcaselector</a>)<br>
+ * <strong>License:</strong> MIT — original license terms apply to reused and modified code.
+ *
+ */
 public final class HeadlessTileImage {
 	
 	private static final int[] corruptedChunkOverlay = new int[256];
@@ -44,6 +63,15 @@ public final class HeadlessTileImage {
 	
 	private HeadlessTileImage() {}
 
+	/**
+	 * Generates a buffered image of a region file at the specified scale.
+	 * If {@code nether} is true, caves are rendered instead of surface terrain.
+	 *
+	 * @param mcaFile the region file to render
+	 * @param nether true to render using the cave renderer (used for Nether dimensions)
+	 * @param scale the rendering scale (e.g., 1 for 512x512, 2 for 256x256, etc.)
+	 * @return a {@link BufferedImage} of the rendered region, or {@code null} if rendering fails
+	 */
 	public static BufferedImage generateBufferedImageOptimized(RegionMCAFile mcaFile, boolean nether, int scale) {
 	    int size = Tile.SIZE / scale;
 	    int chunkSize = Tile.CHUNK_SIZE / scale;
@@ -94,6 +122,18 @@ public final class HeadlessTileImage {
 	    }
 	}
 	
+	/**
+	 * Generates a zoomed-in version of the rendered region image.
+	 *
+	 * <p>The base image is generated first using {@link #generateBufferedImageOptimized}, then
+	 * enlarged by the specified zoom factor using nearest-neighbor scaling.
+	 *
+	 * @param mcaFile the region file to render
+	 * @param nether true to use the cave renderer
+	 * @param scale the rendering scale for the base image
+	 * @param zoomFactor how many times to upscale the output (e.g., 2 = 2x larger)
+	 * @return a zoomed {@link BufferedImage}, or {@code null} if rendering fails
+	 */
 	public static BufferedImage generateZoomedBufferedImageOptimized(RegionMCAFile mcaFile, boolean nether, int scale, int zoomFactor) {
 	    BufferedImage base = generateBufferedImageOptimized(mcaFile, nether, scale);
 	    if (base == null || zoomFactor <= 1) return base;
@@ -121,6 +161,22 @@ public final class HeadlessTileImage {
 	    return zoomed;
 	}
 
+	/**
+	 * Renders a single chunk into the provided pixel buffers, using the appropriate renderer for
+	 * either surface terrain or cave views.
+	 *
+	 * <p>If the chunk fails to render, a "corrupted" fallback image is drawn instead.
+	 *
+	 * @param chunkData the chunk to render
+	 * @param nether whether to use the cave renderer
+	 * @param x the x offset in pixels
+	 * @param z the z offset in pixels
+	 * @param scale the rendering scale
+	 * @param pixelBuffer the main ARGB pixel buffer to draw to
+	 * @param waterPixels buffer for storing water surface pixels
+	 * @param terrainHeights buffer to store terrain elevation values
+	 * @param waterHeights buffer to store water elevation values
+	 */
 	@SuppressWarnings("unchecked")
 	private static void drawChunkImage(Chunk chunkData, boolean nether, int x, int z, int scale, int[] pixelBuffer, int[] waterPixels, short[] terrainHeights, short[] waterHeights) {
 		if (chunkData.getData() == null) return;
@@ -146,6 +202,10 @@ public final class HeadlessTileImage {
 	}
 
 	
+	/**
+	 * Original method copied from MCA Selector project (MIT License).
+	 * No modifications have been made.
+	 */
 	private static void flatShade(int[] pixelBuffer, short[] terrainHeights, int scale) {
 		int size = Tile.SIZE / scale;
 		int index = 0;
@@ -157,6 +217,10 @@ public final class HeadlessTileImage {
 		}
 	}
 
+	/**
+	 * Original method copied from MCA Selector project (MIT License).
+	 * No modifications have been made.
+	 */
 	private static void shade(int[] pixelBuffer, int[] waterPixels, short[] terrainHeights, short[] waterHeights, int scale) {
 		if (!ConfigProvider.WORLD.getShadeWater() || !ConfigProvider.WORLD.getShade()) {
 			waterHeights = terrainHeights;

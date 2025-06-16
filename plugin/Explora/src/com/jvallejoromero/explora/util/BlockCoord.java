@@ -2,6 +2,14 @@ package com.jvallejoromero.explora.util;
 
 import java.util.Objects;
 
+
+/**
+ * Represents the coordinates of a single block in a 3D Minecraft world (x, y, z).
+ *
+ * <p>This utility class is used to encapsulate block-level positions and provides
+ * helper methods for equality, hashing, and conversion to chunk-level coordinates.
+ *
+ */
 public class BlockCoord {
     public int x;
     public int y;
@@ -25,6 +33,14 @@ public class BlockCoord {
         return z;
     }
     
+    /**
+     * Converts this block coordinate to a chunk coordinate.
+     *
+     * <p>Only the X and Z values are used; Y is discarded since chunks
+     * dont need it in Minecraft
+     *
+     * @return a new {@link ChunkCoord} representing the chunk containing this block
+     */
     public ChunkCoord toChunkCoord() {
     	return new ChunkCoord(x >> 4, z >> 4);
     }

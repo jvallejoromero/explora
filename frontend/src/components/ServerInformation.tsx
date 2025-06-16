@@ -32,7 +32,7 @@ const ServerInformation = ({world}: ServerInformationProps) => {
 
     return (
         <div style={styles.container}>
-            <div> Online Players: {onlinePlayers.length}</div>
+            <div>Online Players: {onlinePlayers.length}</div>
             <div>Chunks: {chunkCount}</div>
         </div>
     )

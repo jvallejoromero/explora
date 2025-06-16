@@ -96,6 +96,7 @@ const MinecraftCoordinatesSearchBar = ({world, map }: MinecraftCoordinatesSearch
             }
         } catch (err) {
             console.error("Could not verify coordinates", err);
+            setError("Connection to backend server failed!");
         }
     }
 

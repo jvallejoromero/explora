@@ -20,16 +20,35 @@ import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import com.google.gson.Gson;
 import com.jvallejoromero.explora.ExploraPlugin;
 
+/**
+ * Utility class for sending asynchronous HTTP requests to the backend server used by the {@code Explora} plugin.
+ *
+ * <p>Supports:
+ * <ul>
+ *   <li>Sending JSON-based {@code POST} and {@code DELETE} requests</li>
+ *   <li>Uploading ZIP files as multipart form data</li>
+ *   <li>Streaming chunk updates in batches</li>
+ *   <li>Sending player location and server status updates</li>
+ * </ul>
+ *
+ * <p>All methods use Bukkit's async task scheduler to avoid blocking the main server thread.
+ * Endpoints, keys, and configurations are injected from the {@link Constants} class.
+ */
 public class HttpUtil {
 
 	private static final Gson GSON = new Gson();
 	
+	/**
+	 * Sends a {@code DELETE} request asynchronously to the given backend URL.
+	 *
+	 * @param targetUrl the endpoint to delete from
+	 * @param onSuccess optional callback to run on the main thread if the response is successful (HTTP 200)
+	 */
 	public static void deleteRequest(String targetUrl, Runnable onSuccess) {
 	    Bukkit.getScheduler().runTaskAsynchronously(ExploraPlugin.getInstance(), () -> {
 	        try {
@@ -59,6 +78,13 @@ public class HttpUtil {
 	    });
 	}
 	
+	/**
+	 * Sends a JSON {@code POST} request asynchronously to the given backend URL.
+	 *
+	 * @param targetUrl the endpoint to send the request to
+	 * @param json the JSON-encoded request body
+	 * @param onComplete an optional callback to run on the main thread after the request completes
+	 */
 	public static void postJson(String targetUrl, String json, Runnable onComplete) {
 		Bukkit.getScheduler().runTaskAsynchronously(ExploraPlugin.getInstance(), () -> {
 			try {
@@ -101,6 +127,13 @@ public class HttpUtil {
 		});
 	}
 	
+	/**
+	 * Sends ZIP file data as a multipart/form-data {@code POST} request to the backend.
+	 *
+	 * @param zipBytes the ZIP archive bytes to send
+	 * @param onSuccess callback to run on the main thread if the upload succeeds
+	 * @param deleteExisting if {@code true}, tells the backend to delete previously uploaded data before saving
+	 */
     public static void postZipBytes(byte[] zipBytes, Runnable onSuccess, boolean deleteExisting) {
     	try {
             String boundary = "----ExploraBoundary" + System.currentTimeMillis();
@@ -152,6 +185,13 @@ public class HttpUtil {
     	}
     }
 	
+    /**
+     * Asynchronously uploads a ZIP file to the backend using multipart/form-data encoding.
+     *
+     * <p>This is an alternative to {@link #postZipBytes(byte[], Runnable, boolean)} and works with pre-zipped files on disk.
+     *
+     * @param zipFile the ZIP file to upload
+     */
 	public static void uploadZipToBackendAsync(File zipFile) {
 		Bukkit.getScheduler().runTaskAsynchronously(ExploraPlugin.getInstance(), () -> {
 			try {
@@ -213,11 +253,26 @@ public class HttpUtil {
 		});
 	}
     
+	/**
+	 * Sends a {@code DELETE} request to the backend to remove all previously stored chunk data.
+	 *
+	 * @param onSuccess optional callback to run after successful deletion
+	 */
 	public static void sendDeleteChunksRequest(Runnable onSuccess) {
 		String targetUrl = buildUrl(Constants.BACKEND_DELETE_CHUNKS_URL);
 		deleteRequest(targetUrl, onSuccess);
 	}
 	
+	/**
+	 * Sends a single chunk coordinate update to the backend.
+	 *
+	 * <p>Use this for updating one chunk's explored status.
+	 *
+	 * @param world the world the chunk belongs to
+	 * @param x the chunk's X coordinate
+	 * @param z the chunk's Z coordinate
+	 * @param onComplete callback to run after request completion
+	 */
 	public static void sendChunkUpdate(World world, int x, int z, Runnable onComplete) {
 		String worldName = world.getName();
 		
@@ -232,6 +287,13 @@ public class HttpUtil {
 		postJson(url, json, onComplete);
 	}
 	
+	/**
+	 * Sends a batch of chunk coordinates for a single world to the backend.
+	 *
+	 * @param world the world these chunks belong to
+	 * @param chunks the list of {@link ChunkCoord} objects to send
+	 * @param onComplete callback to run after request completion
+	 */
 	public static void sendBatchChunkUpdate(World world, List<ChunkCoord> chunks, Runnable onComplete) {
 		String worldName = world.getName();
 		Map<String, Object> jsonMap = new HashMap<>();
@@ -245,6 +307,18 @@ public class HttpUtil {
 		postJson(url, json, onComplete);
 	}
 	
+	/**
+	 * Streams chunk updates to the backend in timed batches to reduce load.
+	 *
+	 * <p>This method splits a large chunk set into batches of a given size, then schedules each batch
+	 * to be sent at the specified interval.
+	 *
+	 * @param world the world the chunks belong to
+	 * @param chunkSet the list of chunk coordinates to send
+	 * @param batchSize how many chunks per batch
+	 * @param delayTicks how many ticks between batch sends
+	 * @param onBatchSent optional callback after each batch is sent
+	 */
 	public static void streamChunkBatches(World world, List<ChunkCoord> chunkSet, int batchSize, long delayTicks, Runnable onBatchSent) {
 	    List<ChunkCoord> allChunks = new ArrayList<>(chunkSet); 
 	    int total = allChunks.size();
@@ -270,32 +344,13 @@ public class HttpUtil {
 	        }
 	    }.runTaskTimer(ExploraPlugin.getInstance(), 0L, delayTicks);
 	}
-
-	/**
-	 * @deprecated Use {@link #sendPlayerPositionUpdates(Set, Runnable)} to batch all players instead.
-	 */
-	@Deprecated
-	public static void sendPlayerPositionUpdate(Player player, Runnable onComplete) {
-		String name = player.getName();
-		String world = player.getWorld().getName();
-		int x = player.getLocation().getBlockX();
-		int y = player.getLocation().getBlockY();
-		int z = player.getLocation().getBlockZ();
-
-	    Map<String, Object> jsonMap = new HashMap<>();
-	    
-	    jsonMap.put("name", name);
-	    jsonMap.put("world", world);
-	    jsonMap.put("x", x);
-	    jsonMap.put("y", y);
-	    jsonMap.put("z", z);
-	    
-	    String json = GSON.toJson(jsonMap);
-		String url = buildUrl(Constants.BACKEND_PLAYER_POST_URL);
-		
-		postJson(url, json, onComplete);
-	}
 	
+	/**
+	 * Sends a batched update of all currently online player locations to the backend.
+	 *
+	 * @param players a set of {@link PlayerStatus} objects representing player states
+	 * @param onComplete callback to run after request completion
+	 */
 	public static void sendPlayerPositionUpdates(Set<PlayerStatus> players, Runnable onComplete) {
 
 	    Map<String, Object> jsonMap = new HashMap<>();
@@ -307,7 +362,12 @@ public class HttpUtil {
 		postJson(url, json, onComplete);
 	}
 	
-	
+	/**
+	 * Sends a snapshot of the current server status (online status, player count, time, MOTD)
+	 * to the backend server for monitoring or display purposes.
+	 *
+	 * @param onComplete callback to run after request completion
+	 */
 	public static void sendServerStatusUpdate(Runnable onComplete) {
 		boolean isOnline = true;
 		int playerCount = Bukkit.getOnlinePlayers().size();
@@ -326,6 +386,12 @@ public class HttpUtil {
 		postJson(url, json, onComplete);
 	}
 	
+	/**
+	 * Replaces the placeholder {@code %port%} in a backend URL template with the actual backend port.
+	 *
+	 * @param template the URL template from {@link Constants}
+	 * @return the resolved URL string
+	 */
 	private static String buildUrl(String template) {
 	    return template.replace("%port%", String.valueOf(Constants.BACKEND_PORT));
 	}

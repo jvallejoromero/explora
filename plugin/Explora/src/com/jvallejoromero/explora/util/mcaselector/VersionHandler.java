@@ -12,6 +12,23 @@ import net.querz.mcaselector.version.ColorMapping;
 import net.querz.mcaselector.version.Helper;
 import net.querz.mcaselector.version.java_1_21.ColorMapping_24w18a;
 
+/**
+ * A simplified version registry for MCA Selector components, adapted for use in the
+ * {@code Explora} plugin.
+ *
+ * <p>This class maps Minecraft data versions to their corresponding {@link ChunkRenderer} and
+ * {@link ColorMapping} implementations, enabling version-aware rendering of chunk data.
+ *
+ * <p><strong>Modifications from original MCA Selector:</strong>
+ * <ul>
+ *   <li>Removed automatic classpath scanning and dynamic registration</li>
+ *   <li>Manually registers only the required implementations (e.g., {@code ChunkRenderer_1_21})</li>
+ *   <li>Integrated logging via {@link ExploraPlugin}</li>
+ * </ul>
+ *
+ * <p><strong>Original Author:</strong> Querz (<a href="https://github.com/Querz/mcaselector">github.com/Querz/mcaselector</a>)<br>
+ * <strong>License:</strong> MIT — original license terms apply to reused and modified code.
+ */
 public final class VersionHandler {
 
 	private VersionHandler() {}

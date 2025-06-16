@@ -21,6 +21,23 @@ import com.jvallejoromero.explora.util.TileImageGenerator;
 import com.jvallejoromero.explora.util.mcaselector.VersionHandler;
 import com.jvallejoromero.explora.yaml.CustomConfigurationFile;
 
+/**
+ * Main plugin class for {@code Explora}, a Spigot plugin that visualizes terrain data
+ * and syncs world exploration to a backend map rendering service.
+ *
+ * <p>This class handles:
+ * <ul>
+ *   <li>Initializing configuration and constants from {@code config.yml}</li>
+ *   <li>Managing lifecycle hooks ({@link #onEnable()}, {@link #onDisable()})</li>
+ *   <li>Scanning world folders for explored chunks and region files</li>
+ *   <li>Sending chunk and render metadata to the backend API</li>
+ *   <li>Scheduling async tasks for periodic player and server updates</li>
+ *   <li>Conditionally triggering re-renders of missing tiles</li>
+ * </ul>
+ *
+ * <p>Data is asynchronously scanned and synced to avoid blocking the main server thread.
+ *
+ */
 public class ExploraPlugin extends JavaPlugin {
 	
 	private static ExploraPlugin instance;
@@ -30,6 +47,12 @@ public class ExploraPlugin extends JavaPlugin {
 	
 	private CustomConfigurationFile config;
 	
+	/**
+	 * Called when the plugin is enabled.
+	 *
+	 * <p>Initializes configuration, chunk tracking, and tile rendering pipelines.
+	 * Depending on {@code config.yml}, this may trigger a full world scan and backend sync.
+	 */
 	@Override
 	public void onEnable() {
 		VersionHandler.init();
@@ -141,6 +164,11 @@ public class ExploraPlugin extends JavaPlugin {
 		log("&a" + Constants.PLUGIN_NAME + " v" + this.getDescription().getVersion() + " enabled!");
 	}
 	
+	/**
+	 * Called when the plugin is disabled.
+	 *
+	 * <p>Flushes all newly explored chunk data to disk before shutting down.
+	 */
 	@Override
 	public void onDisable() {
 		log("&aSaving chunk data to files before disabling..");
@@ -150,36 +178,69 @@ public class ExploraPlugin extends JavaPlugin {
 		log("&a" + Constants.PLUGIN_NAME + " v" + this.getDescription().getVersion() + " disabled!");
 	}
 	
+	/**
+	 * @return the singleton plugin instance
+	 * @throws IllegalStateException if accessed before plugin initialization
+	 */
 	public static ExploraPlugin getInstance() {
 		if (instance == null) throw new IllegalStateException("Plugin not initialized yet!");
 		return instance;
 	}
 	
+	/**
+	 * @return whether the initial chunk data has been loaded from disk
+	 */
 	public static boolean hasLoadedChunks() {
 		return chunksLoaded;
 	}
 	
+	/**
+	 * Sends a formatted message to the server console with plugin prefix and color support.
+	 *
+	 * @param message the message to send
+	 */
 	public static void log(String message) {
 		Bukkit.getConsoleSender().sendMessage(StringUtils.colorize("[" + Constants.PLUGIN_NAME + "] " + message));
 	}
 	
+	/**
+	 * Sends a formatted warning message to the console in red.
+	 *
+	 * @param message the warning to display
+	 */
 	public static void warn(String message) {
 		Bukkit.getConsoleSender().sendMessage(StringUtils.colorize("[" + Constants.PLUGIN_NAME + "] " + "&c [WARNING] " + message));
 	}
 	
+	/**
+	 * Sends a debug message to the console if {@code debug-mode} is enabled in the config.
+	 *
+	 * @param message the debug message
+	 */
 	public static void debug(String message) {
 		if (!Constants.DEBUG_MODE) return;
 		Bukkit.getConsoleSender().sendMessage(StringUtils.colorize("[" + Constants.PLUGIN_NAME + "]" + "&8 [DEBUG] " + message));
 	}
 	
+	/**
+	 * Registers all event listeners used by the plugin.
+	 * 
+	 * <p>Called once during plugin startup inside {@link #onEnable()}.
+	 */
 	public void registerEvents() {
 		this.getServer().getPluginManager().registerEvents(new ChunkTracker(), this);
 	}
 	
+	/**
+	 * @return the plugin's loaded {@link CustomConfigurationFile}
+	 */
 	public CustomConfigurationFile getConfiguration() {
 		return config;
 	}
 	
+	/**
+	 * @return the singleton {@link ChunkManager} instance
+	 */
 	public ChunkManager getChunkManager() {
 		return chunkManager;
 	}

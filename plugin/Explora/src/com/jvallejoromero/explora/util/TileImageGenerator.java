@@ -37,6 +37,20 @@ import net.querz.nbt.ListTag;
 import net.querz.nbt.StringTag;
 import net.querz.nbt.Tag;
 
+/**
+ * Utility class responsible for rendering Minecraft region files into PNG images and
+ * extracting biome metadata as JSON for the {@code Explora} plugin.
+ *
+ * <p>Supports:
+ * <ul>
+ *   <li>Rendering region tiles from .mca files using {@link HeadlessTileImage}</li>
+ *   <li>Generating biome + chunk metadata in JSON files</li>
+ *   <li>Rerendering only updated or missing regions</li>
+ *   <li>Parallel processing with thread pooling and async task scheduling</li>
+ * </ul>
+ *
+ * <p>All rendering is designed to run asynchronously to avoid blocking the server thread.
+ */
 public class TileImageGenerator {
 	
 	public static final Pattern REGION_PATTERN = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
@@ -44,6 +58,18 @@ public class TileImageGenerator {
 	
 	private static ExploraPlugin plugin = ExploraPlugin.getInstance();
 	
+	/**
+	 * Renders a region file into a PNG image and writes corresponding biome metadata to a JSON file.
+	 *
+	 * <p>Scans the target region for all present chunks, renders the image using
+	 * {@link HeadlessTileImage}, and writes a metadata file listing biome palettes per chunk.
+	 *
+	 * @param worldName the name of the world this region belongs to
+	 * @param regionX the region X coordinate
+	 * @param regionZ the region Z coordinate
+	 * @param outputFile the output image file to save the rendered PNG to
+	 * @return {@code true} if rendering and JSON writing succeeded; {@code false} otherwise
+	 */
 	public static boolean generateRegionData(String worldName, int regionX, int regionZ, File outputFile) {
 	    long start = System.currentTimeMillis();
 
@@ -151,6 +177,15 @@ public class TileImageGenerator {
 		return false;
 	}
     
+	/**
+	 * Renders only the specified set of updated regions across worlds, running each job in parallel.
+	 *
+	 * <p>Uses a thread pool sized to available system cores and invokes the given callback once all
+	 * regions have finished rendering.
+	 *
+	 * @param regionsToRender a map of world names to sets of {@link RegionCoord}s to re-render
+	 * @param onComplete a callback that runs on the main thread after rendering completes
+	 */
 	public static void rerenderUpdatedRegionsAsync(Map<String, Set<RegionCoord>> regionsToRender, Runnable onComplete) {
 		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
 			int cores = Runtime.getRuntime().availableProcessors();
@@ -202,6 +237,12 @@ public class TileImageGenerator {
 		});
 	}
     
+	/**
+	 * Scans region directories across all worlds to identify any .mca files that do not yet
+	 * have a corresponding rendered PNG and JSON file in the output directory.
+	 *
+	 * @return a map of world names to missing {@link RegionCoord}s that need rendering
+	 */
     public static Map<String, Set<RegionCoord>> getMissingRenderRegions() {
     	Map<String, Set<RegionCoord>> regions = new HashMap<>();
     	
@@ -245,6 +286,14 @@ public class TileImageGenerator {
         return regions;
     }
     
+    /**
+     * Asynchronously renders all .mca region files across worlds into PNG tiles and JSON metadata,
+     * skipping files that already exist, and using multithreading for performance.
+     *
+     * @param zoomLevel the scaling factor to apply to the rendered output image
+     * @param outputBaseDir the directory to save rendered files in
+     * @param onComplete callback invoked on the main thread once rendering is finished
+     */
     public static void generateTilesAsyncOptimized(int zoomLevel, File outputBaseDir, Runnable onComplete) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             Instant start = Instant.now();
@@ -405,6 +454,12 @@ public class TileImageGenerator {
         });
     }
 
+    /**
+     * Formats a {@link Duration} into a human-readable string in the format "Xm Ys".
+     *
+     * @param d the duration to format
+     * @return the formatted string
+     */
     private static String formatDuration(Duration d) {
         long mins = d.toMinutes();
         long secs = d.minusMinutes(mins).getSeconds();

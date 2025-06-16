@@ -28,6 +28,18 @@ import com.jvallejoromero.explora.util.HttpUtil;
 import com.jvallejoromero.explora.util.RegionCoord;
 import com.jvallejoromero.explora.util.TileImageGenerator;
 
+/**
+ * Handles chunk tracking and management across all worlds in the server.
+ * 
+ * Responsibilities:
+ * - Loading and saving chunk data to JSON files.
+ * - Tracking newly explored chunks.
+ * - Sending chunk data to a backend service.
+ * - Scheduling rerendering of updated regions.
+ * 
+ * Used by: ExploraPlugin
+ * Depends on: Constants, TileImageGenerator, HttpUtil
+ */
 public class ChunkManager {
 
 	private final ExploraPlugin plugin;
@@ -42,6 +54,10 @@ public class ChunkManager {
 		this.plugin = plugin;
 	}
 
+	/**
+	 * Initializes the data required for this class to work and sets up periodic tasks
+	 * @param onLoaded if specified, runs after loading has completed
+	 */
 	public void init(Runnable onLoaded) {
 		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
 			ExploraPlugin.log("&aReading chunk data..");
@@ -74,6 +90,11 @@ public class ChunkManager {
 		}, Constants.CHUNK_UPDATE_TICKS, Constants.CHUNK_UPDATE_TICKS);
 	}
 
+	/**
+	 * Parses and loads all previously explored chunks from JSON files in the configured save directory.
+	 * Populates the internal `worldToChunks` map.
+	 * 
+	 */
 	private void loadChunksFromAllJSONFiles() {
 		File dataFolder = Constants.SAVE_PATH.toFile();
 		File[] files = dataFolder.listFiles((dir, name) -> name.endsWith(".json"));
@@ -117,6 +138,9 @@ public class ChunkManager {
 		}
 	}
 	
+	/**
+	 * Saves all new chunks to the json files
+	 */
 	public void saveNewlyExploredChunksToDisk() {
 		int newChunkSets = 0;
 		
@@ -207,6 +231,10 @@ public class ChunkManager {
 	    }
 	}
 	
+	/**
+	 * Sends all chunks to the node backend
+	 * @param onComplete if specified, runs when all data is done being sent
+	 */
 	public void sendChunksToDatabase(Runnable onComplete) {
 	    sentChunksToDatabase = false;
 	    
@@ -268,6 +296,10 @@ public class ChunkManager {
 	    }
 	}
 	
+	/**
+	 * Sends only new chunks to node backend
+	 * @param onComplete, if specified runs when data is done being sent
+	 */
 	public void sendNewChunksToDatabase(Runnable onComplete) {
 	    sentChunksToDatabase = false;
 	    
@@ -326,6 +358,10 @@ public class ChunkManager {
 	    }
 	}
 	
+	/**
+	 * Gets regions that need re-rendering, based on newly explored chunks
+	 * @return Map containing regions to re-render, with the key being the world and the value being a Set of RegionCoords
+	 */
 	public Map<String, Set<RegionCoord>> getRegionsToRerender() {
 	    Map<String, Set<RegionCoord>> regionsToRerender = new HashMap<>();
 

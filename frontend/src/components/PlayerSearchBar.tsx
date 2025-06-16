@@ -46,7 +46,7 @@ const PlayerSearchBar = ( { placeholder="Search for a player..", map }: PlayerSe
             return;
         }
 
-        const foundPlayer = onlinePlayers.find((player) => player.name === query);
+        const foundPlayer = onlinePlayers.find((player) => player.name.toLowerCase() === query.toLowerCase());
 
         if (foundPlayer) {
             const { x, z } = minecraftCoordsToPixels(foundPlayer!.x, foundPlayer!.z);
@@ -61,11 +61,15 @@ const PlayerSearchBar = ( { placeholder="Search for a player..", map }: PlayerSe
         const input = e.target.value;
         setQuery(input);
 
-        const playerMatches = onlinePlayers.filter((player) => player.name.startsWith(input)).map((player) => player.name);
+        const playerMatches = onlinePlayers.filter((player) => player.name.toLowerCase().startsWith(input.toLowerCase())).map((player) => player.name);
         setSuggestions(playerMatches);
     }
 
     const handleTabPress = () => {
+        if (query.trim().length === 0) {
+            setError("Please enter a username!");
+            return;
+        }
         if (suggestions.length === 0) {
             const trimmedInput = trimString(query);
             setError(`No suggestions found for: ${trimmedInput}`);

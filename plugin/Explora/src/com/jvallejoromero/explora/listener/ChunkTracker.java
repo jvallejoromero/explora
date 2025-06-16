@@ -20,17 +20,13 @@ import com.jvallejoromero.explora.manager.ChunkManager;
 import com.jvallejoromero.explora.util.BlockCoord;
 import com.jvallejoromero.explora.util.ChunkCoord;
 import com.jvallejoromero.explora.util.Constants;
-import com.jvallejoromero.explora.util.StringUtils;
-
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 
 public class ChunkTracker implements Listener {
 
 	private static Map<ChunkCoord, Set<BlockCoord>> changedBlocks = new HashMap<>();
 	
 	@EventHandler
-	public void onPlayerMove(PlayerMoveEvent event) {
+	public void onChunkExplore(PlayerMoveEvent event) {
 		Player player = event.getPlayer();
 		
 		int fromChunkX = event.getFrom().getBlockX() >> 4;
@@ -117,9 +113,5 @@ public class ChunkTracker implements Listener {
 		
 		return ((blockY >= highestY) || (blockY - highestY >= -1));
 	}
-	
-    private void sendActionBarMessage(Player player, String message) {
-    	player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(StringUtils.colorize(message)));
-    }
 	
 }

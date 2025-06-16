@@ -15,6 +15,23 @@ import net.querz.nbt.ListTag;
 import net.querz.nbt.LongArrayTag;
 import net.querz.nbt.Tag;
 
+/**
+ * Minecraft 1.21.5-compatible chunk rendering implementation adapted from the
+ * <a href="https://github.com/Querz/mcaselector">MCA Selector</a> project (MIT License).
+ * <p>
+ * This class provides logic to render terrain, water, and cave structures from chunk NBT data
+ * using palette and block state decoding. It maps chunk sections to pixel data suitable for
+ * visualization.
+ *
+ * <p><b>Modifications:</b>
+ * <ul>
+ *   <li>Updated to support Minecraft version 1.21.5 (data version 4325)</li>
+ *   <li>Integrated with the {@code Explora} plugin architecture</li>
+ * </ul>
+ *
+ * <p><b>Original Author:</b> Querz (https://github.com/Querz/mcaselector)<br>
+ * <b>License:</b> MIT — original license terms apply to reused and adapted code
+ */
 @MCVersionImplementation(4325) // 1.21.5 data version
 public class ChunkRenderer_1_21 implements ChunkRenderer<CompoundTag, String> {
 
