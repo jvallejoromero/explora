@@ -42,7 +42,7 @@ Track active players, click to focus, or jump to known locations.
 ### 📱 Mobile Support
 
 Fully responsive interface — access your world map from any device.
-![mobile-view](./assets/mobile-ui.png)
+![mobile-view](./assets/mobile-ui.png) 
 
 
 ## 📦 Project Structure
