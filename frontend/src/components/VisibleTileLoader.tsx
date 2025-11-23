@@ -40,7 +40,7 @@ const MemoTile = React.memo(({ world, x, z, versionParam }: { world: string, x: 
                 overlayRef.current = ref as L.ImageOverlay;
             }}
             key={`${world}_${x}_${z}_${versionParam}`}
-            url={baseUrl + `/tiles/${world}/0/${x}/${z}.png?apiKey=${apiKey}${versionParam}`}
+            url={baseUrl + `/tiles/${world}/0/${x}/${z}.webp?apiKey=${apiKey}${versionParam}`}
             bounds={[
                 [(z + 1) * TILE_SIZE * -1, x * TILE_SIZE],
                 [z * TILE_SIZE * -1, (x + 1) * TILE_SIZE],
@@ -96,7 +96,7 @@ const VisibleTileLoader: React.FC<Props> = ({ world }) => {
                             visibleTiles.push({x, z});
                         }
                     } else {
-                        const res = await fetch(baseUrl + `/tiles/exists/${world}/0/${x}/${z}.png?apiKey=${apiKey}`);
+                        const res = await fetch(baseUrl + `/tiles/exists/${world}/0/${x}/${z}.webp?apiKey=${apiKey}`);
                         const exists = res.ok;
                         tileExistenceCache.set(key, exists);
                         if (exists) {

@@ -75,7 +75,7 @@ const MinecraftCoordinatesSearchBar = ({world, map }: MinecraftCoordinatesSearch
         }
 
         const {x, z} = minecraftCoordsToRegionCoords(parsedX, parsedZ);
-        const url=`${baseUrl}/tiles/exists/${world}/0/${x}/${z}.png?apiKey=${apiKey}`;
+        const url=`${baseUrl}/tiles/exists/${world}/0/${x}/${z}.webp?apiKey=${apiKey}`;
         try {
             const res = await fetch(url);
             const data = await res.json();
