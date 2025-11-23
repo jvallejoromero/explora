@@ -4,6 +4,7 @@ const router = express.Router();
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 const unzipper = require("unzipper");
+const sharp = require("sharp"); // Import sharp
 
 const path = require("path");
 const fs = require("fs");
@@ -41,8 +42,8 @@ router.post("/tile-zip", upload.single("file"), async (req, res) => {
         const updatedTiles = new Map();
 
         for (const file of directory.files) {
-            const relativePath = file.path;
-            const fullPath = path.join(TILES_DIR, relativePath);
+            let relativePath = file.path;
+            let fullPath = path.join(TILES_DIR, relativePath);
 
             // Prevent zip slip
             if (!fullPath.startsWith(TILES_DIR)) {
@@ -54,20 +55,34 @@ router.post("/tile-zip", upload.single("file"), async (req, res) => {
             fs.mkdirSync(dir, { recursive: true });
 
             if (file.type === "File") {
-                const contentStream = file.stream();
-                const writeStream = fs.createWriteStream(fullPath);
-                await new Promise((resolve, reject) => {
-                    contentStream.pipe(writeStream)
-                        .on("finish", resolve)
-                        .on("error", reject);
-                });
+                const contentBuffer = await file.buffer();
+
+                let fileExtension = path.extname(relativePath).toLowerCase();
+                let baseName = path.basename(relativePath, fileExtension);
+                let outputBuffer = contentBuffer;
+
+                if (fileExtension === ".png") {
+                    try {
+                        outputBuffer = await sharp(contentBuffer)
+                            .webp({ quality: 30, alphaQuality: 50, smartSubsample: true, effort: 6, lossless: false })
+                            .toBuffer();
+                        relativePath = path.join(path.dirname(relativePath), baseName + ".webp");
+                        fullPath = path.join(TILES_DIR, relativePath);
+                        fileExtension = ".webp";
+                    } catch (conversionErr) {
+                        console.warn(`Failed to convert PNG to WebP for ${relativePath}:`, conversionErr);
+                    }
+                }
+
+                await fs.promises.writeFile(fullPath, outputBuffer);
 
                 if (!shouldDeleteAll) {
-                    const parts = relativePath.split('/');
+                    const parts = relativePath.split(path.sep);
                     if (parts.length >= 2) {
                         const world = parts[0];
-                        const filename = parts[1];
-                        const match = filename.match(/^r\.(-?\d+)\.(-?\d+)\.png$/);
+                        const filename = parts[parts.length - 1];
+
+                        const match = filename.match(/^r\.(-?\d+)\.(-?\d+)\.(png|webp|json)$/);
 
                         if (match) {
                             const x = parseInt(match[1]);

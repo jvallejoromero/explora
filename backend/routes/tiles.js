@@ -21,7 +21,7 @@ router.get("/exists/:world/:zoom/:x/:z.:extension", async (req, res) => {
         return res.status(400).send("Invalid zoom or coordinates");
     }
 
-    if (extension !== "png" && extension !== "json") {
+    if (extension !== "webp" && extension !== "json") {
         return res.status(400).send("Unsupported file type");
     }
 
@@ -43,7 +43,7 @@ router.get("/:world/:zoom/:x/:z.:extension", async (req, res) => {
 
     console.log(`received request for tile: world=${world}, x=${x}, z=${z}, zoom=${zoom}, ext=${extension}`);
 
-    if (extension !== "png" && extension !== "json") {
+    if (extension !== "webp" && extension !== "json") {
         return res.status(400).send("Unsupported file type");
     }
 
